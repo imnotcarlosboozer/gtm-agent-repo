@@ -88,7 +88,7 @@ Store: `REP_NAME`, `REP_USER_ID`, `REP_EMAIL`.
 
 ## Step 3: Fetch All Calls for the Week (REST API)
 
-Paginate through ALL calls in the date range using `/v2/calls/extensive` with `parties: true` — this returns participant data needed for filtering in the same request. Do NOT use `search_calls` MCP (host-only) or the basic `/v2/calls` endpoint (no participant data).
+Paginate through ALL calls in the date range using `/v2/calls/extensive` with **both `parties` and `interaction`** — parties provides participant data for filtering; interaction provides per-speaker talk time so observer calls can be dropped *before* fetching transcripts.
 
 ```bash
 AUTH=$(echo -n "$GONG_ACCESS_KEY:$GONG_SECRET_KEY" | base64)
@@ -97,27 +97,32 @@ curl -s -X POST "https://api.gong.io/v2/calls/extensive" \
   -H "Content-Type: application/json" \
   -d '{
     "filter": {"fromDateTime": "{FROM}", "toDateTime": "{TO}"},
-    "contentSelector": {"exposedFields": {"parties": true}},
+    "contentSelector": {"exposedFields": {"parties": true, "interaction": true}},
     "cursor": "{CURSOR_IF_PAGINATING}"
   }'
 ```
 
 Paginate using `records.cursor` until all pages are fetched (~3 pages for this workspace).
 
-**Initial filter** (cheap, no transcript needed):
-- Keep only calls where `REP_USER_ID` appears in `parties[].userId`
-- Drop calls with `metaData.duration < 900` (< 15 minutes)
-- Drop calls where every party email ends in `@astronomer.io` (internal-only)
+**Filter — all steps done here, no transcript needed yet:**
+1. Keep only calls where `REP_USER_ID` appears in `parties[].userId`
+2. Drop calls with `metaData.duration < 900` (< 15 minutes)
+3. Drop calls where every party email ends in `@astronomer.io` (internal-only)
+4. **Talk ratio pre-filter**: use `interaction.speakers[].talkTime` to compute the rep's share of total talk time. Drop calls where rep's share < 10% (observer). The rep's speakerId maps to their `parties` entry via `userId`.
 
-Store the candidate call list: `[{id, title, url, date, duration_seconds, parties}]`
+Store the **qualifying** call list only: `[{id, title, url, date, duration_seconds, parties, talk_ratio}]`
+
+The speaker ID → name map is already available from `parties` — **store it now** and pass it to Step 4. Do not re-fetch parties later.
 
 **Also kick off in parallel**: Read `~/claude-work/rep-coaching/scores.csv` (Step 6) while call pagination is running — no dependency between them.
 
+If 0 calls remain after filtering: output "No external calls found for {REP_NAME} in {WEEK}." and stop.
+
 ---
 
-## Step 4: Fetch Transcripts & Final Filter (REST API)
+## Step 4: Fetch Transcripts (REST API)
 
-Fetch transcripts for all candidate calls in a **single batch request**:
+Fetch transcripts for **only the qualifying calls** (typically 3–5, not the full candidate list) in a single batch request:
 
 ```bash
 AUTH=$(echo -n "$GONG_ACCESS_KEY:$GONG_SECRET_KEY" | base64)
@@ -142,16 +147,10 @@ Response structure per call:
 }
 ```
 
-Build a speaker ID → name map from the `parties` data fetched in Step 3.
-
-**Talk ratio filter**: Sum `(end - start)` ms per speaker from transcript sentences. Drop calls where rep's share < 10% of total speaking time (they were an observer). Flag calls where rep talked > 60%.
+Use the speaker ID → name map built in Step 3 (do not re-fetch). Calculate precise talk ratios from transcript sentence timestamps to refine the estimates from Step 3.
 
 **Deep link format**: `{call.url}&t={sentence.start / 1000}`
 Example: `https://us-35700.app.gong.io/call?id=123456&t=45` links to the 45-second mark.
-
-Store the final qualifying call list with full transcripts and talk ratios.
-
-If 0 calls remain: output "No external calls found for {REP_NAME} in {WEEK}." and stop.
 
 ---
 
