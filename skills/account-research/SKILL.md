@@ -1,6 +1,6 @@
 ---
 name: account-research
-description: Research a company for Astronomer sales fitness using Exa AI, Leadfeeder, and Common Room. Generates a fit score and AE brief with evidence from all three sources. Use when the user asks to research an account, score a company, or run batch account research.
+description: Research a company for Astronomer sales fitness using Exa AI (or built-in web search), Leadfeeder, Common Room, and Gong. Generates a fit score and AE brief. Exa and Common Room are optional — the skill falls back gracefully without them. Use when the user asks to research an account, score a company, or run batch account research.
 version: 1.0.0
 ---
 
@@ -26,14 +26,15 @@ This could be:
 ## SINGLE COMPANY MODE
 
 ### Step 1: Parse Input
-Extract `COMPANY_NAME` and `DOMAIN` from the input. If only a name is given, use Exa to find the domain.
+Extract `COMPANY_NAME` and `DOMAIN` from the input. If only a name is given, use web search to find the domain (Exa if available, otherwise Claude's built-in web search).
 
 ### Step 2: Collect Data (Parallel)
 
 Run all five source collections in parallel using the Agent tool with subagent_type="general-purpose". Launch 5 agents simultaneously:
 
-#### Agent 1: Exa AI Research
-Run these 9 Exa calls (parallel where possible):
+#### Agent 1: Web Research (Exa AI preferred, built-in web search as fallback)
+
+**If the `mcp__exa__*` tools are available**, run these 9 Exa calls (parallel where possible). **If Exa is not connected**, perform the same searches using Claude's built-in web search — the queries and goals are identical, just use the WebSearch tool instead of the Exa MCP tools.
 
 1. **Company Research**:
    ```
@@ -560,18 +561,18 @@ Each source fails independently. Handle failures gracefully:
 
 | Source | Failure Behavior |
 |--------|-----------------|
-| **Exa AI** | Confidence drops to LOW. Report still generates from LF + CR data. Note "Exa research unavailable" in report header. |
+| **Exa AI** | Fall back to Claude's built-in web search for all the same queries. Results may be less targeted but coverage is equivalent. No confidence penalty when web search is used as fallback. |
+| **Common Room** | Key Contacts section shows "No Common Room data found." Contact intelligence limited to what Gong and Exa/web search surface. Report still generates normally. |
 | **Leadfeeder** | Buying Signals dimension caps at 1 (hiring signals only). Note "No website visit data" in Website Engagement section. |
-| **Common Room** | Key Contacts section shows "No community contacts found." Stack Evidence dimension limited to EXA data. |
 | **Gong** | Prior Conversations section shows "No prior Gong calls found. Cold outreach." Email Brief adjusts tone accordingly. |
-| **All four fail** | Report cannot be generated. Log error and skip to next company in batch mode. |
+| **All sources fail** | Report cannot be generated. Log error and skip to next company in batch mode. |
 
 ---
 
 ## Important Guidelines
 
 - The entire final report file MUST be under 1,000,000 characters. If raw intelligence is too large, truncate verbose sections (website crawl, news articles) before assembling the report. Prioritize keeping scoring rationale, contacts, and buying signals intact over raw source data.
-- Use ONLY the MCP tools listed above — no direct API calls via Bash/curl
+- For web research, prefer Exa MCP tools if available; fall back to Claude's built-in web search if not
 - Be thorough — search multiple sources per dimension
 - Every claim must be tagged with its source
 - Preserve existing changelog entries from previous reports when re-running

@@ -162,9 +162,11 @@ Claude will open a browser window to complete OAuth authorization. Use your Gong
 
 ---
 
-#### Common Room
+#### Common Room (optional)
 
-Common Room is used to look up contacts, community activity, and website visit data.
+Common Room is used to look up contacts, community activity, and website visit data. **This connection is optional** — if Common Room isn't set up, the skill skips that data source and generates the report from the remaining sources. Contact intelligence will be limited to what surfaces from Gong transcripts and web research.
+
+To connect Common Room:
 
 ```bash
 claude mcp add --transport http commonroom https://mcp.commonroom.io/mcp
@@ -174,9 +176,11 @@ Claude will open a browser window to complete OAuth authorization.
 
 ---
 
-#### Exa AI
+#### Exa AI (optional)
 
-Exa is used for web research — company overviews, hiring signals, engineering blogs, news, and job postings.
+Exa is used for web research — company overviews, hiring signals, engineering blogs, news, and job postings. **This connection is optional** — if Exa isn't set up, the skill automatically falls back to Claude's built-in web search for all the same queries. Results are equivalent; Exa just provides more targeted filtering (e.g., date ranges, category filters on job postings).
+
+To connect Exa for better results:
 
 1. Get your Exa API key from [dashboard.exa.ai](https://dashboard.exa.ai)
 2. Install the Exa MCP server:
