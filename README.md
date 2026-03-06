@@ -4,6 +4,16 @@ Claude Code skills for the Astronomer sales team. Research accounts, review call
 
 ---
 
+## Contents
+
+| Skill | What it does | Setup |
+|-------|-------------|-------|
+| [`account-research`](#account-research) | Research any company for Astronomer fit — scored AE brief, tech stack, hiring signals, buying intent | [Setup](#setup-account-research) |
+| [`account-question`](#account-question) | Ask anything about an account using Gong transcripts and saved research | [Setup](#setup-account-question) |
+| [`weekly-gong-review`](#weekly-gong-review) | Weekly call coaching report — scorecard, highlights, patterns, deep links to exact timestamps | [Setup](#setup-weekly-gong-review) |
+
+---
+
 ## Skills
 
 ### `account-research`
