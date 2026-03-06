@@ -557,15 +557,16 @@ After all companies processed, display:
 
 ## Graceful Degradation
 
-Each source fails independently. Handle failures gracefully:
+Every source is optional. The only hard requirement is Claude Code itself. Handle missing sources as follows:
 
 | Source | Failure Behavior |
 |--------|-----------------|
-| **Exa AI** | Fall back to Claude's built-in web search for all the same queries. Results may be less targeted but coverage is equivalent. No confidence penalty when web search is used as fallback. |
-| **Common Room** | Key Contacts section shows "No Common Room data found." Contact intelligence limited to what Gong and Exa/web search surface. Report still generates normally. |
+| **Exa AI** | Fall back to Claude's built-in web search for all the same queries. Results may be less targeted but coverage is equivalent. No confidence penalty. |
+| **Common Room** | Key Contacts section shows "No Common Room data found." Contact intelligence limited to what Gong and web search surface. Report still generates normally. |
 | **Leadfeeder** | Buying Signals dimension caps at 1 (hiring signals only). Note "No website visit data" in Website Engagement section. |
 | **Gong** | Prior Conversations section shows "No prior Gong calls found. Cold outreach." Email Brief adjusts tone accordingly. |
-| **All sources fail** | Report cannot be generated. Log error and skip to next company in batch mode. |
+| **Apollo** | Skip the Apollo write-back. Report saves locally only. Note "Apollo sync skipped" at the end. |
+| **Nothing connected** | Run all research via Claude's built-in web search. Report still generates with fit score, tech stack analysis, hiring signals, and outreach brief. Confidence will be MEDIUM or LOW. This is the minimum viable output. |
 
 ---
 

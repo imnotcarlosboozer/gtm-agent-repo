@@ -2,7 +2,7 @@
 
 Claude Code skills for Astronomer sales intelligence. Research companies for Apache Airflow fit, score pipeline opportunities, and generate AE briefs — all from within Claude Code.
 
-Built for the Astronomer sales team. Works out of the box once the required connections and file structure are in place (see setup below).
+Built for the Astronomer sales team. The only hard requirement is Claude Code — every data source degrades gracefully, so you'll always get a report. More connections = richer output, but web search alone is enough to get started.
 
 ---
 
@@ -122,9 +122,19 @@ export GONG_ACCESS_KEY_SECRET=your_gong_secret
 
 Get these from Gong → Settings → API → Access Keys.
 
-### 4. Connect MCP servers
+### 4. Connect MCP servers (all optional)
 
-The skills rely on 5 MCP server connections. Set up each one below.
+Every connection below is optional. With nothing connected, the skill uses Claude's built-in web search and still produces a fit score, tech stack analysis, hiring signals, and outreach brief. Each connection you add makes the output richer:
+
+| Connection | What it adds |
+|------------|-------------|
+| **Exa** | More targeted web searches with date filtering — marginal improvement over built-in search |
+| **Gong** | Prior call history, pain points, objections, deal stage — highest value add |
+| **Leadfeeder** | Website visit intent — which pages, how recently |
+| **Common Room** | Known contacts and community activity |
+| **Apollo** | Writes the report back to the `Account_Research` field in your CRM |
+
+Set up whichever ones you have access to:
 
 ---
 
