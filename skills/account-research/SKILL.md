@@ -34,18 +34,20 @@ Run all five source collections in parallel using the Agent tool with subagent_t
 
 #### Agent 1: Web Research (Exa AI preferred, built-in web search as fallback)
 
-**If the `mcp__exa__*` tools are available**, run these 9 Exa calls (parallel where possible). **If Exa is not connected**, perform the same searches using Claude's built-in web search — the queries and goals are identical, just use the WebSearch tool instead of the Exa MCP tools.
+**If the `mcp__exa__*` tools are available**, run these 7 Exa calls (parallel where possible). **If Exa is not connected**, perform the same searches using Claude's built-in web search — the queries and goals are identical, just use the WebSearch tool instead.
 
-1. **Company Research**:
+Run all 7 searches in parallel, then follow up with job posting crawls.
+
+1. **Company Overview**:
    ```
    mcp__exa__company_research_exa(companyName=COMPANY_NAME)
    ```
 
-2. **Orchestration/Pipeline Evidence**:
+2. **Tech Stack, Engineering & Orchestration** (merged):
    ```
    mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} data pipeline orchestration airflow dagster prefect",
-     startPublishedDate=[12 months ago, YYYY-MM-DD],
+     query="{COMPANY_NAME} data pipeline orchestration airflow dagster prefect engineering blog infrastructure",
+     startPublishedDate=[18 months ago, YYYY-MM-DD],
      numResults=5
    )
    ```
@@ -60,57 +62,46 @@ Run all five source collections in parallel using the Agent tool with subagent_t
    )
    ```
 
-4. **Recent News**:
+4. **News & Announcements** (merged):
    ```
    mcp__exa__web_search_exa(
-     query="{COMPANY_NAME} corporate strategy news 2025 2026",
+     query="{COMPANY_NAME} news funding product launch announcement 2025 2026",
      numResults=5
    )
    ```
 
 5. **Website Crawl**:
    ```
-   mcp__exa__crawling_exa(url="https://{DOMAIN}", maxCharacters=5000)
+   mcp__exa__crawling_exa(url="https://{DOMAIN}", maxCharacters=3000)
    ```
 
-6. **Engineering & Data Blog Posts**:
+6. **Case Studies & Vendor Mentions**:
    ```
    mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} engineering blog data infrastructure pipeline platform",
-     startPublishedDate=[18 months ago, YYYY-MM-DD],
+     query="{COMPANY_NAME} Snowflake OR Databricks OR dbt OR AWS OR Google Cloud OR Azure case study OR customer OR partner OR blog",
      numResults=5
    )
    ```
 
-7. **Product Announcements**:
-   ```
-   mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} product launch announcement new feature release",
-     startPublishedDate=[12 months ago, YYYY-MM-DD],
-     numResults=5
-   )
-   ```
-
-8. **Case Studies & Third-Party Mentions**:
-   ```
-   mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} case study customer story",
-     numResults=5
-   )
-   ```
-   Also search for vendor-specific case studies that may reveal stack details:
-   ```
-   mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} Snowflake OR Databricks OR dbt OR AWS OR Google Cloud OR Azure case study OR customer OR partner",
-     numResults=5
-   )
-   ```
-
-9. **Job Description Details** (for top 1-2 relevant postings found in search 3):
+7. **Job Description Details** (crawl top 1-2 relevant postings from search 3):
    ```
    mcp__exa__crawling_exa(url="[JOB_POSTING_URL]", maxCharacters=5000)
    ```
-   Crawl the most relevant data engineering / platform engineering job posting URLs found in the hiring signals search. Extract specific requirements, responsibilities, and tech stack mentions. If no relevant postings found, skip this step.
+   Crawl the most relevant data engineering / platform engineering job posting URLs. Extract specific requirements, responsibilities, and tech stack mentions in full — this is high-value data. If no relevant postings found, skip.
+
+**Output format for this agent**: Return a compact structured summary for searches 1–6. For each search, provide bullet points of key findings with source URLs — do NOT return full article text or raw API response bodies. Example:
+```
+## Tech Stack & Engineering
+- Confirmed Airflow usage in Jan 2025 engineering blog post [url]
+- Snowflake + dbt mentioned in case study with Fivetran [url]
+- No Dagster/Prefect mentions found
+
+## Hiring Signals
+- Active DE posting (Mar 2025): requires Airflow, Snowflake, dbt [url]
+- Platform Engineer posting: K8s, Terraform, cloud-agnostic [url]
+```
+
+For search 7 (job posting crawls), return the **full crawled text** — do not summarize.
 
 #### Agent 2: Leadfeeder Lookup
 
@@ -139,6 +130,10 @@ Run all five source collections in parallel using the Agent tool with subagent_t
      end_date=[today, YYYY-MM-DD]
    )
    ```
+
+   From the response, extract only these fields — discard the rest:
+   - `lead_id`, `name`, `website`, `visit_count`, `last_visited_at`
+   - From visits: `url`, `date`, `duration` for each visit
 
 4. **If no match after 5 pages** — record "No Leadfeeder data found for {COMPANY_NAME}."
 
@@ -261,7 +256,7 @@ Search for any prior Astronomer conversations with this company. This is the hig
 
 ### Step 3: Assemble RAW INTELLIGENCE Block
 
-Combine all results into a structured markdown block:
+Combine all agent results into a structured block. **Keep it compact** — bullet summaries with source URLs for web research; full text only for job postings and Gong transcripts.
 
 ```markdown
 ---
@@ -269,34 +264,28 @@ Combine all results into a structured markdown block:
 # Collected: {TODAY_DATE}
 ---
 
-## SOURCE: EXA AI
+## SOURCE: WEB RESEARCH
 
-### Company Research
-[Insert company_research_exa results]
+### Company Overview
+[2-3 sentence summary of what the company does, size, industry, business model]
 
-### Orchestration & Pipeline Evidence
-[Insert web_search_advanced results for orchestration query]
+### Tech Stack & Engineering Signals
+[Bullet points: confirmed tools/platforms with source URLs. e.g. "- Airflow confirmed in Mar 2025 engineering blog [url]"]
 
 ### Hiring Signals
-[Insert web_search_advanced results for hiring query]
+[Bullet points: relevant open roles with key tech requirements and source URLs]
 
-### Recent News
-[Insert web_search results for news query]
+### News & Announcements
+[Bullet points: funding, acquisitions, product launches, headcount changes with dates and URLs]
 
-### Website Content
-[Insert crawling_exa results]
+### Website Content Summary
+[2-3 sentences: what the homepage/main pages reveal about their data/platform maturity]
 
-### Engineering & Data Blog Posts
-[Insert results — titles, URLs, key excerpts about their data stack, infrastructure decisions, or technical challenges]
+### Case Studies & Vendor Mentions
+[Bullet points: any vendor partnerships, case studies, or third-party stack mentions with URLs]
 
-### Product Announcements
-[Insert results — recent product launches, features, or platform changes that may imply new data pipeline needs]
-
-### Case Studies & Third-Party Mentions
-[Insert results — any case studies by vendors (Snowflake, dbt, Databricks, etc.) featuring the company, or blog posts from other companies referencing their stack. These often contain detailed tech stack and architecture info.]
-
-### Job Description Details
-[Insert crawled job posting text for relevant data/platform roles — specific requirements, responsibilities, tools mentioned. If no postings crawled, note "No relevant job postings crawled."]
+### Job Description Details (full text)
+[Full crawled text of top 1-2 relevant data/platform engineering job postings. Preserve verbatim — do not summarize.]
 
 ---
 
@@ -305,27 +294,27 @@ Combine all results into a structured markdown block:
 ### Lead Match
 [Found / Not Found]
 
-### Lead Details
-[Insert lead details if found, or "No Leadfeeder data found for {COMPANY_NAME}."]
+### Visit Summary
+[If found: total visits, date range, visit_count, last_visited_at]
 
 ### Page Visits
-[Insert visit details — URLs, dates, frequency — if found]
+[List of visited URLs with dates — flag any visits to /pricing, /demo, /astro, /docs]
 
 ---
 
 ## SOURCE: COMMON ROOM
 
 ### Organization Profile
-[Insert org details if found, or "No Common Room organization found for {DOMAIN}."]
+[Key fields only: employees, revenue range, industry, lead score, tags. Or "Not found."]
 
 ### Contacts (Top 10 by recent activity)
-[Insert contact list with titles, emails, activity summaries]
+[Name | Title | Email | Recent activity summary]
 
 ### Recent Community Activity (Last 90 Days)
-[Insert activity feed with content, source, dates]
+[Bullet points: activity content, source, date]
 
 ### Website Visits (Last 90 Days)
-[Insert website visit URLs and dates]
+[List of visited URLs]
 
 ---
 
@@ -335,33 +324,30 @@ Combine all results into a structured markdown block:
 [Found / Not Found — if not found, note "No prior Gong calls found. Cold outreach."]
 
 ### Call Summary
-[If calls found: list each call with date, participants (Astronomer + prospect), and 2-3 sentence summary of what was discussed]
+[If calls found: list each call with date, participants (Astronomer + prospect), and 2-3 sentence summary]
 
 ### Key Intelligence from Calls
-[If calls found: pain points mentioned, objections raised, decision-makers identified, deal stage, follow-up items. If not found, omit this section.]
+[Pain points, objections, decision-makers, deal stage, follow-up items]
 
 ### Tech Stack from Calls
-[If calls found: specific tools, platforms, cloud providers, data warehouses, orchestration tools, and other technologies they mentioned using or evaluating during conversations. Tag each with the call date it was mentioned in. If not found, omit this section.]
+[Specific tools mentioned, tagged with call date]
+
+### Full Transcripts
+[Full transcript text — preserve verbatim, do not summarize]
 
 ```
 
-### Step 4: Generate Fit Score
+### Step 4: Generate Fit Score + Account Research (Single Pass)
 
-Read the prompt template from `~/claude-work/research-assistant/prompts/01_fit_scoring.md`.
+Read both prompt templates:
+- `~/claude-work/research-assistant/prompts/01_fit_scoring.md`
+- `~/claude-work/research-assistant/prompts/02_account_research.md`
 
-Replace `{COMPANY_NAME}` and `{DOMAIN}` with actual values.
+Replace `{COMPANY_NAME}` and `{DOMAIN}` with actual values in both.
 
-Prepend the RAW INTELLIGENCE block to the prompt, then evaluate the company according to the scoring rubric. Generate the fit score output.
+**In a single generation pass**, prepend the RAW INTELLIGENCE block once and produce both outputs together — the fit score section followed immediately by the account research section. Do not make two separate calls with the same raw intelligence.
 
-### Step 5: Generate Account Research Summary
-
-Read the prompt template from `~/claude-work/research-assistant/prompts/02_account_research.md`.
-
-Replace `{COMPANY_NAME}` and `{DOMAIN}` with actual values.
-
-Prepend the RAW INTELLIGENCE block to the prompt, then generate the account research summary.
-
-### Step 6: Compose Final Report
+### Step 5: Compose Final Report
 
 **Generate company slug**: lowercase company name, replace spaces with underscores, remove special characters.
 
@@ -423,14 +409,14 @@ If no significant changes detected (re-run):
 
 When re-running, **preserve all previous changelog entries** from the old report's Changelog section and prepend the new entry above them.
 
-### Step 7: Save Report
+### Step 6: Save Report
 
 **Report file** (overwrite):
 ```
 ~/claude-work/research-assistant/outputs/accounts/{company_slug}/report.md
 ```
 
-### Step 8: Update Apollo Account_Research Field
+### Step 7: Update Apollo Account_Research Field
 
 After saving the report, write the full report content to the `Account_Research` custom field in Apollo.
 
@@ -465,7 +451,7 @@ After saving the report, write the full report content to the `Account_Research`
 
 3. If the account is not found in Apollo or the update fails, log a note but do not block report generation.
 
-### Step 9: Present Results
+### Step 8: Present Results
 
 Display the final report to the user. Highlight:
 - The fit score and grade prominently
@@ -502,7 +488,7 @@ while page <= 20:  # Safety cap
     page += 1
 ```
 
-Store the full lead list in memory for matching during per-company processing.
+From each lead object, store only: `id`, `name`, `website`, `visit_count`, `last_visited_at`. Discard all other fields. This keeps the pre-fetched list compact in context.
 
 ### Batch Step 3: Check for Resume
 
@@ -512,7 +498,7 @@ Read `~/claude-work/research-assistant/outputs/batch_summary.csv` if it exists. 
 
 For each company NOT already processed today:
 
-1. Run the single-company flow (Steps 2-8), but for Leadfeeder: match against the pre-fetched lead list instead of paginating.
+1. Run the single-company flow (Steps 2-7), but for Leadfeeder: match against the pre-fetched lead list instead of paginating.
 2. After each company, update the batch summary CSV.
 3. Pause 2 seconds between companies (rate limit management).
 
