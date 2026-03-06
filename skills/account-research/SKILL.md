@@ -28,9 +28,30 @@ This could be:
 ### Step 1: Parse Input
 Extract `COMPANY_NAME` and `DOMAIN` from the input. If only a name is given, use web search to find the domain (Exa if available, otherwise Claude's built-in web search).
 
-### Step 2: Collect Data (Parallel)
+### Step 2: Pre-flight Checks (Before Launching Agents)
 
-Run all five source collections in parallel using the Agent tool with subagent_type="general-purpose". Launch 5 agents simultaneously:
+Run these two quick checks in the main thread before spawning any agents — they're fast and determine whether to launch the Gong agent at all:
+
+**a) Gong index pre-check** — Search the global call index for any calls matching this company:
+```bash
+python3 -c "
+import json, sys
+with open('/Users/joeykenney/claude-work/gong-cache/all_calls/calls.json') as f:
+    calls = json.load(f)
+matches = [c for c in calls if 'COMPANY_NAME'.lower() in (c.get('crm_account_name') or '').lower()]
+print(f'GONG_MATCH: {len(matches)} calls found')
+" 2>/dev/null || echo "GONG_MATCH: index unavailable"
+```
+If result is `0 calls found`, set `GONG_HAS_CALLS=false` and skip the Gong agent entirely — record "No prior Gong calls found. Cold outreach." If index is unavailable, launch the Gong agent as normal.
+
+**b) Apollo key check**:
+```bash
+[ -n "$APOLLO_API_KEY" ] && echo "APOLLO: key set" || echo "APOLLO: no key — will skip Step 7"
+```
+
+### Step 3: Collect Data (Parallel)
+
+Run source collections in parallel using the Agent tool with subagent_type="general-purpose". Launch agents simultaneously — skip the Gong agent if `GONG_HAS_CALLS=false` from the pre-flight check:
 
 #### Agent 1: Web Research (Exa AI preferred, built-in web search as fallback)
 
@@ -64,7 +85,7 @@ Run all five source collections in parallel using the Agent tool with subagent_t
    ```
    mcp__exa__web_search_exa(
      query="{COMPANY_NAME} corporate strategy news 2025 2026",
-     numResults=5
+     numResults=3
    )
    ```
 
@@ -87,7 +108,7 @@ Run all five source collections in parallel using the Agent tool with subagent_t
    mcp__exa__web_search_advanced_exa(
      query="{COMPANY_NAME} product launch announcement new feature release",
      startPublishedDate=[12 months ago, YYYY-MM-DD],
-     numResults=5
+     numResults=3
    )
    ```
 
@@ -242,7 +263,7 @@ Run all five source collections in parallel using the Agent tool with subagent_t
 
 #### Agent 4: Gong Call History
 
-Search for any prior Astronomer conversations with this company. This is the highest-value source — if we've already talked to them, the email must reference that context.
+Only launch this agent if `GONG_HAS_CALLS=true` from the pre-flight check. If skipped, record "No prior Gong calls found. Cold outreach." and move on.
 
 1. Run the Gong transcript script:
    ```bash
@@ -263,7 +284,7 @@ Search for any prior Astronomer conversations with this company. This is the hig
 
 4. If no calls found, record: "No prior Gong calls found for {COMPANY_NAME}. This is a cold outreach."
 
-### Step 3: Assemble RAW INTELLIGENCE Block
+### Step 4: Assemble RAW INTELLIGENCE Block
 
 Combine all agent results into a structured block. **Keep it compact** — bullet summaries with source URLs for web research; full text only for job postings and Gong transcripts.
 
@@ -352,7 +373,7 @@ Combine all agent results into a structured block. **Keep it compact** — bulle
 
 ```
 
-### Step 4: Generate Fit Score + Account Research (Single Pass)
+### Step 5: Generate Fit Score + Account Research (Single Pass)
 
 Read both prompt templates:
 - `~/claude-work/research-assistant/prompts/01_fit_scoring.md`
@@ -360,9 +381,14 @@ Read both prompt templates:
 
 Replace `{COMPANY_NAME}` and `{DOMAIN}` with actual values in both.
 
-**In a single generation pass**, prepend the RAW INTELLIGENCE block once and produce both outputs together — the fit score section followed immediately by the account research section. Do not make two separate calls with the same raw intelligence.
+**Structure the context in this order** (stable content first for prompt caching):
+1. Prompt template 1 (fit scoring rubric)
+2. Prompt template 2 (AE brief template)
+3. RAW INTELLIGENCE block (variable, always last)
 
-### Step 5: Compose Final Report
+**In a single generation pass**, produce both outputs together — the fit score section followed immediately by the account research section. Do not make two separate calls with the same raw intelligence.
+
+### Step 6: Compose Final Report
 
 **Generate company slug**: lowercase company name, replace spaces with underscores, remove special characters.
 
@@ -424,14 +450,16 @@ If no significant changes detected (re-run):
 
 When re-running, **preserve all previous changelog entries** from the old report's Changelog section and prepend the new entry above them.
 
-### Step 6: Save Report
+### Step 7: Save Report
 
 **Report file** (overwrite):
 ```
 ~/claude-work/research-assistant/outputs/accounts/{company_slug}/report.md
 ```
 
-### Step 7: Update Apollo Account_Research Field
+### Step 8: Update Apollo Account_Research Field
+
+Skip this step entirely if `APOLLO_API_KEY` is not set (from pre-flight check). Log "Apollo sync skipped — no API key" and move on.
 
 After saving the report, write the full report content to the `Account_Research` custom field in Apollo.
 
@@ -466,7 +494,7 @@ After saving the report, write the full report content to the `Account_Research`
 
 3. If the account is not found in Apollo or the update fails, log a note but do not block report generation.
 
-### Step 8: Present Results
+### Step 9: Present Results
 
 Display the final report to the user. Highlight:
 - The fit score and grade prominently
@@ -513,7 +541,7 @@ Read `~/claude-work/research-assistant/outputs/batch_summary.csv` if it exists. 
 
 For each company NOT already processed today:
 
-1. Run the single-company flow (Steps 2-7), but for Leadfeeder: match against the pre-fetched lead list instead of paginating.
+1. Run the single-company flow (Steps 2-9), but for Leadfeeder: match against the pre-fetched lead list instead of paginating.
 2. After each company, update the batch summary CSV.
 3. Pause 2 seconds between companies (rate limit management).
 
@@ -570,6 +598,18 @@ Every source is optional. The only hard requirement is Claude Code itself. Handl
 | **Nothing connected** | Run all research via Claude's built-in web search. Report still generates with fit score, tech stack analysis, hiring signals, and outreach brief. Confidence will be MEDIUM or LOW. This is the minimum viable output. |
 
 ---
+
+## Model Selection
+
+Use the cheapest model appropriate for each task:
+
+| Task | Model |
+|------|-------|
+| Exa/web research, Common Room, Gong analysis | Sonnet 4.6 (default) |
+| Apollo account lookup + write-back | Haiku 4.5 — purely mechanical curl commands |
+| Leadfeeder field extraction + matching | Haiku 4.5 — no reasoning required |
+| Changelog comparison (old vs new score) | Haiku 4.5 — deterministic comparison |
+| Fit scoring + AE brief generation | Sonnet 4.6 — requires reasoning |
 
 ## Important Guidelines
 
