@@ -11,13 +11,11 @@ Research companies for Astronomer (Apache Airflow) sales fitness using four data
 ## Input
 The user has provided: {{args}}
 
-This could be:
 - Single company: `{COMPANY}, {DOMAIN}` (e.g., "Acme Corp, acme.com")
 - Batch mode: `batch: /path/to/file.csv` (CSV with columns: company_name, domain)
 
 ## Constants
 - **Leadfeeder Account ID**: `281783`
-- **Today's Date**: Use current date in YYYY-MM-DD format
 - **Prompts Directory**: `~/claude-work/research-assistant/prompts/`
 - **Output Directory**: `~/claude-work/research-assistant/outputs/accounts/`
 
@@ -26,13 +24,13 @@ This could be:
 ## SINGLE COMPANY MODE
 
 ### Step 1: Parse Input
-Extract `COMPANY_NAME` and `DOMAIN` from the input. If only a name is given, use web search to find the domain (Exa if available, otherwise Claude's built-in web search).
+Extract `COMPANY_NAME` and `DOMAIN`. If only a name is given, use web search to find the domain.
 
-### Step 2: Pre-flight Checks (Before Launching Agents)
+### Step 2: Pre-flight Checks
 
-Run these two quick checks in the main thread before spawning any agents — they're fast and determine whether to launch the Gong agent at all:
+Run before spawning agents:
 
-**a) Gong index pre-check** — Search the global call index for any calls matching this company:
+**a) Gong index pre-check**:
 ```bash
 python3 -c "
 import json, sys
@@ -42,32 +40,30 @@ matches = [c for c in calls if 'COMPANY_NAME'.lower() in (c.get('crm_account_nam
 print(f'GONG_MATCH: {len(matches)} calls found')
 " 2>/dev/null || echo "GONG_MATCH: index unavailable"
 ```
-If result is `0 calls found`, set `GONG_HAS_CALLS=false` and skip the Gong agent entirely — record "No prior Gong calls found. Cold outreach." If index is unavailable, launch the Gong agent as normal.
+If `0 calls found`, set `GONG_HAS_CALLS=false` — skip Gong in Agent 2 and record "No prior Gong calls found. Cold outreach." If index unavailable, run Gong as normal.
 
 **b) Apollo key check**:
 ```bash
-[ -n "$APOLLO_API_KEY" ] && echo "APOLLO: key set" || echo "APOLLO: no key — will skip Step 7"
+[ -n "$APOLLO_API_KEY" ] && echo "APOLLO: key set" || echo "APOLLO: no key — will skip Step 8"
 ```
 
-### Step 3: Collect Data (Parallel)
+### Step 3: Collect Data (2 Parallel Agents)
 
-Run source collections in parallel using the Agent tool with subagent_type="general-purpose". Launch agents simultaneously — skip the Gong agent if `GONG_HAS_CALLS=false` from the pre-flight check:
+Launch both agents simultaneously using the Agent tool with subagent_type="general-purpose":
 
-#### Agent 1: Web Research (Exa AI preferred, built-in web search as fallback)
+#### Agent 1: Public Research (Exa AI preferred, built-in web search as fallback)
 
-**If the `mcp__exa__*` tools are available**, run these 9 Exa calls (parallel where possible). **If Exa is not connected**, perform the same searches using Claude's built-in web search — the queries and goals are identical, just use the WebSearch tool instead of the Exa MCP tools.
+If `mcp__exa__*` tools are available, use them. Otherwise, use Claude's built-in web search with the same queries.
 
-1. **Company Research**:
-   ```
-   mcp__exa__company_research_exa(companyName=COMPANY_NAME)
-   ```
+Run these searches (parallel where possible):
+
+1. **Company Research**: `mcp__exa__company_research_exa(companyName=COMPANY_NAME)`
 
 2. **Orchestration/Pipeline Evidence**:
    ```
    mcp__exa__web_search_advanced_exa(
      query="{COMPANY_NAME} data pipeline orchestration airflow dagster prefect",
-     startPublishedDate=[12 months ago, YYYY-MM-DD],
-     numResults=5
+     startPublishedDate=[12 months ago], numResults=5
    )
    ```
 
@@ -75,31 +71,22 @@ Run source collections in parallel using the Agent tool with subagent_type="gene
    ```
    mcp__exa__web_search_advanced_exa(
      query="{COMPANY_NAME} hiring data engineer platform engineer",
-     category="company",
-     startPublishedDate=[6 months ago, YYYY-MM-DD],
-     numResults=5
+     category="company", startPublishedDate=[6 months ago], numResults=5
    )
    ```
 
 4. **Recent News**:
    ```
-   mcp__exa__web_search_exa(
-     query="{COMPANY_NAME} corporate strategy news 2025 2026",
-     numResults=3
-   )
+   mcp__exa__web_search_exa(query="{COMPANY_NAME} corporate strategy news 2025 2026", numResults=3)
    ```
 
-5. **Website Crawl**:
-   ```
-   mcp__exa__crawling_exa(url="https://{DOMAIN}", maxCharacters=5000)
-   ```
+5. **Website Crawl**: `mcp__exa__crawling_exa(url="https://{DOMAIN}", maxCharacters=5000)`
 
 6. **Engineering & Data Blog Posts**:
    ```
    mcp__exa__web_search_advanced_exa(
      query="{COMPANY_NAME} engineering blog data infrastructure pipeline platform",
-     startPublishedDate=[18 months ago, YYYY-MM-DD],
-     numResults=5
+     startPublishedDate=[18 months ago], numResults=5
    )
    ```
 
@@ -107,186 +94,95 @@ Run source collections in parallel using the Agent tool with subagent_type="gene
    ```
    mcp__exa__web_search_advanced_exa(
      query="{COMPANY_NAME} product launch announcement new feature release",
-     startPublishedDate=[12 months ago, YYYY-MM-DD],
-     numResults=3
+     startPublishedDate=[12 months ago], numResults=3
    )
    ```
 
 8. **Case Studies & Third-Party Mentions**:
    ```
-   mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} case study customer story",
-     numResults=5
-   )
-   ```
-   Also search for vendor-specific case studies that may reveal stack details:
-   ```
+   mcp__exa__web_search_advanced_exa(query="{COMPANY_NAME} case study customer story", numResults=5)
    mcp__exa__web_search_advanced_exa(
      query="{COMPANY_NAME} Snowflake OR Databricks OR dbt OR AWS OR Google Cloud OR Azure case study OR customer OR partner",
      numResults=5
    )
    ```
 
-9. **Job Description Details** (for top 1-2 relevant postings found in search 3):
+9. **Job Description Details** — crawl the top 1-2 relevant data/platform engineering job postings found in search 3:
    ```
    mcp__exa__crawling_exa(url="[JOB_POSTING_URL]", maxCharacters=5000)
    ```
-   Crawl the most relevant data engineering / platform engineering job posting URLs found in the hiring signals search. Extract specific requirements, responsibilities, and tech stack mentions. If no relevant postings found, skip this step.
+   Skip if no relevant postings found.
 
-#### Agent 2: Leadfeeder Lookup
+#### Agent 2: Internal Signals (Leadfeeder + Common Room + Gong)
 
-**IMPORTANT: For single company mode, paginate through leads to find a match.**
+Run all three lookups. Skip Gong if `GONG_HAS_CALLS=false`.
 
-1. Search for the company in Leadfeeder leads:
-   ```
-   mcp__leadfeeder__get_leads(
-     account_id="281783",
-     start_date=[6 months ago, YYYY-MM-DD],
-     end_date=[today, YYYY-MM-DD],
-     page_size=100,
-     page=1
-   )
-   ```
+**Leadfeeder** — paginate up to 5 pages to find a match:
+```
+mcp__leadfeeder__get_leads(account_id="281783", start_date=[6mo ago], end_date=[today], page_size=100, page=1)
+```
+Match by name or domain against `DOMAIN`. If found:
+```
+mcp__leadfeeder__get_lead(account_id="281783", lead_id=MATCHED_LEAD_ID)
+mcp__leadfeeder__get_lead_visits(account_id="281783", lead_id=MATCHED_LEAD_ID, start_date=[6mo ago], end_date=[today])
+```
+Keep only: `lead_id`, `name`, `website`, `visit_count`, `last_visited_at`, and per-visit `url`/`date`/`duration`.
 
-2. Check each page of results for a lead whose name or website domain matches `DOMAIN`. Paginate up to 5 pages (page=1 through page=5). Stop as soon as a match is found.
+**Common Room** (if connected) — run in parallel with Leadfeeder:
 
-3. **If match found** — get lead details and visits:
-   ```
-   mcp__leadfeeder__get_lead(account_id="281783", lead_id=MATCHED_LEAD_ID)
-   mcp__leadfeeder__get_lead_visits(
-     account_id="281783",
-     lead_id=MATCHED_LEAD_ID,
-     start_date=[6 months ago, YYYY-MM-DD],
-     end_date=[today, YYYY-MM-DD]
-   )
-   ```
-
-   From the response, extract only these fields — discard the rest:
-   - `lead_id`, `name`, `website`, `visit_count`, `last_visited_at`
-   - From visits: `url`, `date`, `duration` for each visit
-
-4. **If no match after 5 pages** — record "No Leadfeeder data found for {COMPANY_NAME}."
-
-#### Agent 3: Common Room Lookup
-
-1. **Organization lookup by domain**:
+1. Org lookup:
    ```
    mcp__commonroom__commonroom_list_objects(
      objectType="Organization",
-     filter={
-       type: "and",
-       clauses: [{
-         type: "stringFilter",
-         field: "companyWebsite",
-         params: { op: "like", value: "{DOMAIN}" }
-       }]
-     },
-     properties=["about", "employees", "location", "subIndustry", "revenueRangeMin", "revenueRangeMax", "leadScores", "topContacts", "contactsCount", "tags", "researchResults"],
+     filter={type:"and", clauses:[{type:"stringFilter", field:"companyWebsite", params:{op:"like", value:"{DOMAIN}"}}]},
+     properties=["about","employees","location","subIndustry","revenueRangeMin","revenueRangeMax","leadScores","topContacts","contactsCount","tags","researchResults"],
      limit=1
    )
    ```
 
-2. **Contacts at the organization** (if org found):
+2. Contacts (if org found):
    ```
    mcp__commonroom__commonroom_list_objects(
      objectType="Contact",
-     filter={
-       type: "and",
-       clauses: [{
-         type: "stringFilter",
-         field: "companyWebsite",
-         params: { op: "like", value: "{DOMAIN}" }
-       }]
-     },
-     properties=["primaryEmail", "title", "fullName", "recentActivities", "recentWebPages", "recentWebVisitsNumber", "leadScores", "profiles", "sparkSummary"],
-     sort="latest_activity",
-     direction="desc",
-     limit=10
+     filter={type:"and", clauses:[{type:"stringFilter", field:"companyWebsite", params:{op:"like", value:"{DOMAIN}"}}]},
+     properties=["primaryEmail","title","fullName","recentActivities","recentWebPages","recentWebVisitsNumber","leadScores","profiles","sparkSummary"],
+     sort="latest_activity", direction="desc", limit=10
    )
    ```
 
-3. **Recent activity from the organization** (if org found, use orgId from step 1):
+3. Recent activity (if org found, use orgId):
    ```
    mcp__commonroom__commonroom_list_objects(
      objectType="Activity",
-     filter={
-       type: "and",
-       clauses: [
-         {
-           type: "stringFilter",
-           field: "orgId",
-           params: { op: "eq", value: "{ORG_ID}" }
-         },
-         {
-           type: "dateRangeFilter",
-           field: "activityTime",
-           params: { op: "in", value: "P90D", min: null, max: null }
-         }
-       ]
-     },
-     properties=["content", "url", "activityTime", "providerName"],
-     sort="activityTime",
-     direction="desc",
-     limit=20
+     filter={type:"and", clauses:[
+       {type:"stringFilter", field:"orgId", params:{op:"eq", value:"{ORG_ID}"}},
+       {type:"dateRangeFilter", field:"activityTime", params:{op:"in", value:"P90D", min:null, max:null}}
+     ]},
+     properties=["content","url","activityTime","providerName"],
+     sort="activityTime", direction="desc", limit=20
    )
    ```
 
-4. **Website visits from the organization's contacts** (if contacts found):
+4. Website visits (if contacts found):
    ```
    mcp__commonroom__commonroom_list_objects(
      objectType="WebsiteVisit",
-     filter={
-       type: "and",
-       clauses: [
-         {
-           type: "and",
-           target: "Contact",
-           objectConfigId: null,
-           targetAssocPaths: null,
-           clauses: [{
-             type: "stringFilter",
-             field: "companyWebsite",
-             params: { op: "like", value: "{DOMAIN}" }
-           }]
-         },
-         {
-           type: "dateRangeFilter",
-           field: "visitTime",
-           params: { op: "in", value: "P90D", min: null, max: null }
-         }
-       ]
-     },
-     properties=["url"],
-     limit=20
+     filter={type:"and", clauses:[
+       {type:"and", target:"Contact", objectConfigId:null, targetAssocPaths:null,
+        clauses:[{type:"stringFilter", field:"companyWebsite", params:{op:"like", value:"{DOMAIN}"}}]},
+       {type:"dateRangeFilter", field:"visitTime", params:{op:"in", value:"P90D", min:null, max:null}}
+     ]},
+     properties=["url"], limit=20
    )
    ```
 
-#### Agent 4: Gong Call History
-
-Only launch this agent if `GONG_HAS_CALLS=true` from the pre-flight check. If skipped, record "No prior Gong calls found. Cold outreach." and move on.
-
-1. Run the Gong transcript script:
-   ```bash
-   python3 -u ~/claude-work/gong_account_transcripts.py "COMPANY_NAME" --stdout
-   ```
-
-2. If the exact name doesn't match, try variations (e.g., "Runway" vs "Runway AI" vs "RunwayML"). You can list available accounts:
-   ```bash
-   python3 ~/claude-work/gong_account_transcripts.py --list-accounts
-   ```
-
-3. If calls are found, extract:
-   - Call dates and participants (who from Astronomer, who from their side)
-   - Key topics discussed (pain points, use cases, objections, current tools)
-   - Tech stack mentioned in conversations (specific tools, platforms, cloud providers, orchestration tools they said they use or are evaluating)
-   - Deal stage / outcome if mentioned
-   - Any follow-up items or commitments made
-
-4. If no calls found, record: "No prior Gong calls found for {COMPANY_NAME}. This is a cold outreach."
+**Gong** (only if `GONG_HAS_CALLS=true` or index was unavailable):
+```bash
+python3 -u ~/claude-work/gong_account_transcripts.py "COMPANY_NAME" --stdout
+```
+Try name variations if no match. Extract: call dates, participants, topics, pain points, tech stack mentions, deal stage, follow-up items.
 
 ### Step 4: Assemble RAW INTELLIGENCE Block
-
-Combine all agent results into a structured block. **Keep it compact** — bullet summaries with source URLs for web research; full text only for job postings and Gong transcripts.
 
 ```markdown
 ---
@@ -297,31 +193,31 @@ Combine all agent results into a structured block. **Keep it compact** — bulle
 ## SOURCE: EXA AI
 
 ### Company Research
-[Insert company_research_exa results]
+[company_research_exa results]
 
 ### Orchestration & Pipeline Evidence
-[Insert web_search_advanced results for orchestration query]
+[search results]
 
 ### Hiring Signals
-[Insert web_search_advanced results for hiring query]
+[search results]
 
 ### Recent News
-[Insert web_search results for news query]
+[search results]
 
 ### Website Content
-[Insert crawling_exa results]
+[crawl results]
 
 ### Engineering & Data Blog Posts
-[Insert results — titles, URLs, key excerpts about their data stack, infrastructure decisions, or technical challenges]
+[titles, URLs, key excerpts about data stack and infrastructure]
 
 ### Product Announcements
-[Insert results — recent product launches, features, or platform changes that may imply new data pipeline needs]
+[recent product launches or platform changes]
 
 ### Case Studies & Third-Party Mentions
-[Insert results — any case studies by vendors (Snowflake, dbt, Databricks, etc.) featuring the company, or blog posts from other companies referencing their stack. These often contain detailed tech stack and architecture info.]
+[vendor case studies featuring this company — often reveal stack details]
 
 ### Job Description Details
-[Insert crawled job posting text for relevant data/platform roles — specific requirements, responsibilities, tools mentioned. If no postings crawled, note "No relevant job postings crawled."]
+[crawled job posting text with requirements and tools. "No relevant job postings crawled." if none.]
 
 ---
 
@@ -331,46 +227,45 @@ Combine all agent results into a structured block. **Keep it compact** — bulle
 [Found / Not Found]
 
 ### Visit Summary
-[If found: total visits, date range, visit_count, last_visited_at]
+[total visits, date range, last_visited_at]
 
 ### Page Visits
-[List of visited URLs with dates — flag any visits to /pricing, /demo, /astro, /docs]
+[list of URLs with dates — flag any /pricing, /demo, /astro, /docs visits]
 
 ---
 
 ## SOURCE: COMMON ROOM
 
 ### Organization Profile
-[Key fields only: employees, revenue range, industry, lead score, tags. Or "Not found."]
+[employees, revenue range, industry, lead score, tags. Or "Not found."]
 
 ### Contacts (Top 10 by recent activity)
 [Name | Title | Email | Recent activity summary]
 
 ### Recent Community Activity (Last 90 Days)
-[Bullet points: activity content, source, date]
+[activity content, source, date]
 
 ### Website Visits (Last 90 Days)
-[List of visited URLs]
+[list of visited URLs]
 
 ---
 
 ## SOURCE: GONG
 
 ### Prior Conversations
-[Found / Not Found — if not found, note "No prior Gong calls found. Cold outreach."]
+[Found / Not Found — if not found: "No prior Gong calls found. Cold outreach."]
 
 ### Call Summary
-[If calls found: list each call with date, participants (Astronomer + prospect), and 2-3 sentence summary]
+[each call: date, participants, 2-3 sentence summary]
 
 ### Key Intelligence from Calls
-[Pain points, objections, decision-makers, deal stage, follow-up items]
+[pain points, objections, decision-makers, deal stage, follow-up items]
 
 ### Tech Stack from Calls
-[Specific tools mentioned, tagged with call date]
+[tools mentioned, tagged with call date]
 
 ### Full Transcripts
-[Full transcript text — preserve verbatim, do not summarize]
-
+[full transcript text]
 ```
 
 ### Step 5: Generate Fit Score + Account Research (Single Pass)
@@ -379,33 +274,24 @@ Read both prompt templates:
 - `~/claude-work/research-assistant/prompts/01_fit_scoring.md`
 - `~/claude-work/research-assistant/prompts/02_account_research.md`
 
-Replace `{COMPANY_NAME}` and `{DOMAIN}` with actual values in both.
-
-**Structure the context in this order** (stable content first for prompt caching):
+**Context order** (stable content first for prompt caching):
 1. Prompt template 1 (fit scoring rubric)
 2. Prompt template 2 (AE brief template)
-3. RAW INTELLIGENCE block (variable, always last)
+3. RAW INTELLIGENCE block
 
-**In a single generation pass**, produce both outputs together — the fit score section followed immediately by the account research section. Do not make two separate calls with the same raw intelligence.
+In a single generation pass, produce the fit score section followed by the account research section.
 
 ### Step 6: Compose Final Report
 
-**Generate company slug**: lowercase company name, replace spaces with underscores, remove special characters.
+**Generate company slug**: lowercase, spaces → underscores, remove special chars.
 
-**Changelog detection** — Before writing, check if a previous report exists at `~/claude-work/research-assistant/outputs/accounts/{company_slug}/report.md`:
-
-1. Read the existing report file (if it exists)
-2. Extract from the old report: total score, grade, confidence, and existing changelog entries
-3. Compare against the new report
-4. **Significant changes** (generate new changelog entry if any):
-   - Score changed by >=2 points
-   - Grade letter changed (e.g., B → A)
-   - New Leadfeeder visits to pricing, demo, or docs pages
-   - New hiring signals mentioning Airflow, orchestration, or data platform
-   - New Common Room contacts with relevant titles (VP Eng, Head of Data, etc.)
-   - New funding rounds or acquisitions
-
-Combine the fit score, account research, and changelog into a single report:
+**Changelog detection** — check for existing report at `~/claude-work/research-assistant/outputs/accounts/{company_slug}/report.md`. If found, extract prior score/grade/confidence and changelog entries. Generate a new changelog entry if any significant change:
+- Score changed ≥2 points
+- Grade letter changed
+- New Leadfeeder visits to pricing/demo/docs pages
+- New hiring signals mentioning Airflow/orchestration/data platform
+- New Common Room contacts with VP Eng / Head of Data titles
+- New funding or acquisitions
 
 ```markdown
 # Account Research Report: {COMPANY_NAME}
@@ -416,210 +302,115 @@ Combine the fit score, account research, and changelog into a single report:
 
 ---
 
-[Fit Score section from Step 4]
+[Fit Score section]
 
 ---
 
-[Account Research section from Step 5]
+[Account Research section]
 
 ---
 
 ## Changelog
 
-[All changelog entries, newest first]
-```
-
-**Changelog entries format** (within the report):
-```markdown
 ### {TODAY_DATE}
-- [Change description]
-- [Change description]
-```
+- [change or "First research generated. Grade: {GRADE}, Score: {SCORE}/20, Confidence: {CONFIDENCE}"]
 
-If no previous report exists, add a single changelog entry:
-```markdown
-### {TODAY_DATE}
-- First research generated. Grade: {GRADE}, Score: {SCORE}/20, Confidence: {CONFIDENCE}
+[prior changelog entries preserved below, newest first]
 ```
-
-If no significant changes detected (re-run):
-```markdown
-### {TODAY_DATE}
-- Re-evaluated. No significant changes. Grade: {GRADE}, Score: {SCORE}/20
-```
-
-When re-running, **preserve all previous changelog entries** from the old report's Changelog section and prepend the new entry above them.
 
 ### Step 7: Save Report
 
-**Report file** (overwrite):
-```
-~/claude-work/research-assistant/outputs/accounts/{company_slug}/report.md
-```
+Overwrite: `~/claude-work/research-assistant/outputs/accounts/{company_slug}/report.md`
 
 ### Step 8: Update Apollo Account_Research Field
 
-Skip this step entirely if `APOLLO_API_KEY` is not set (from pre-flight check). Log "Apollo sync skipped — no API key" and move on.
+Skip entirely if no `APOLLO_API_KEY` (from pre-flight). Log "Apollo sync skipped — no API key."
 
-After saving the report, write the full report content to the `Account_Research` custom field in Apollo.
+- **Field ID**: `6998b33edacda9000deb48ca`
+- Use `typed_custom_fields` (keyed by field ID), NOT `custom_fields` (silently ignored)
 
-- **Account_Research field ID**: `6998b33edacda9000deb48ca`
-- **IMPORTANT**: Use `typed_custom_fields` (keyed by field ID), NOT `custom_fields` (keyed by name) — the name-keyed format silently ignores writes.
-
-1. **Find the Apollo account ID — search by name, confirm by domain**:
+1. Find account — search by name, confirm by domain:
    ```bash
    curl -s -X POST "https://api.apollo.io/v1/accounts/search" \
      -H "Content-Type: application/json" \
      -d "{\"api_key\": \"$APOLLO_API_KEY\", \"q_organization_name\": \"{COMPANY_NAME}\", \"per_page\": 10}"
    ```
-   From the results, find the account whose `domain` field **exactly matches** `{DOMAIN}`. Extract its `id`.
+   Find the result where `account.domain == "{DOMAIN}"`. If none match, skip and log: "Apollo: No account found matching domain {DOMAIN}."
 
-   **IMPORTANT**: Do NOT use the first result blindly. You MUST verify `account.domain == "{DOMAIN}"` before writing. If no account passes this domain check, skip the Apollo update and log: "Apollo: No account found matching domain {DOMAIN} — skipping update."
-
-   > Why: `q_organization_domain` search can return wrong accounts (e.g., querying `runwayml.com` returned Amazon). Name search + explicit domain validation is the reliable pattern.
-
-2. **Write the full report to the Account_Research field**:
-
-   Read the saved report file and write its full contents to the field:
+2. Write report:
    ```bash
-   ACCOUNT_ID="{APOLLO_ACCOUNT_ID}"
-   FIELD_ID="6998b33edacda9000deb48ca"
    REPORT=$(cat ~/claude-work/research-assistant/outputs/accounts/{COMPANY_SLUG}/report.md)
-   curl -s -X PUT "https://api.apollo.io/v1/accounts/${ACCOUNT_ID}" \
+   curl -s -X PUT "https://api.apollo.io/v1/accounts/{ACCOUNT_ID}" \
      -H "Content-Type: application/json" \
-     -d "{\"api_key\": \"$APOLLO_API_KEY\", \"typed_custom_fields\": {\"${FIELD_ID}\": $(echo "$REPORT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}}"
+     -d "{\"api_key\": \"$APOLLO_API_KEY\", \"typed_custom_fields\": {\"6998b33edacda9000deb48ca\": $(echo "$REPORT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}}"
    ```
-
-   Verify success by checking `typed_custom_fields["6998b33edacda9000deb48ca"]` in the response has non-zero length.
-
-3. If the account is not found in Apollo or the update fails, log a note but do not block report generation.
 
 ### Step 9: Present Results
 
-Display the final report to the user. Highlight:
-- The fit score and grade prominently
-- Any notable buying signals
-- Changelog entries if this is a re-run
+Display the final report. Highlight fit score/grade, notable buying signals, and changelog if this is a re-run.
 
 ---
 
 ## BATCH MODE
 
-When input starts with `batch:`, process multiple companies from a CSV file.
-
 ### Batch Step 1: Load CSV
-Read the CSV file. Expected columns: `company_name`, `domain` (or `company`, `domain`; be flexible with header names). Skip header row.
+Columns: `company_name`, `domain`. Be flexible with header names.
 
-### Batch Step 2: Pre-fetch Leadfeeder Data (Optimization)
+### Batch Step 2: Pre-fetch Leadfeeder Data
 
-Pull ALL Leadfeeder leads upfront to avoid re-paginating per company:
-
+Pull all leads upfront (up to 20 pages of 100):
 ```
-page = 1
-all_leads = []
-while page <= 20:  # Safety cap
-    results = mcp__leadfeeder__get_leads(
-        account_id="281783",
-        start_date=[6 months ago],
-        end_date=[today],
-        page_size=100,
-        page=page
-    )
-    all_leads.extend(results)
-    if len(results) < 100:
-        break  # Last page
-    page += 1
+mcp__leadfeeder__get_leads(account_id="281783", start_date=[6mo ago], end_date=[today], page_size=100, page=N)
 ```
-
-From each lead object, store only: `id`, `name`, `website`, `visit_count`, `last_visited_at`. Discard all other fields. This keeps the pre-fetched list compact in context.
+Stop when a page returns <100 results. Store only: `id`, `name`, `website`, `visit_count`, `last_visited_at`.
 
 ### Batch Step 3: Check for Resume
-
-Read `~/claude-work/research-assistant/outputs/batch_summary.csv` if it exists. If a company was already processed today (last_updated matches today's date), skip it. This enables resume after interruption.
+Read `~/claude-work/research-assistant/outputs/batch_summary.csv`. Skip companies where `last_updated` matches today.
 
 ### Batch Step 4: Process Companies Sequentially
 
-For each company NOT already processed today:
+For each unprocessed company:
+1. Run single-company flow (Steps 2–9), matching Leadfeeder from the pre-fetched list.
+2. Update batch summary CSV after each company.
+3. Pause 2 seconds between companies.
 
-1. Run the single-company flow (Steps 2-9), but for Leadfeeder: match against the pre-fetched lead list instead of paginating.
-2. After each company, update the batch summary CSV.
-3. Pause 2 seconds between companies (rate limit management).
-
-### Batch Step 5: Chunking (300+ accounts)
-
-If the CSV has more than 50 companies:
-- Process in chunks of 50
-- After each chunk, pause 10 seconds
-- Log progress: "Processed {N}/{TOTAL} companies. Next chunk starting..."
+### Batch Step 5: Chunking
+If CSV has >50 companies: process in chunks of 50, pause 10 seconds between chunks.
 
 ### Batch Step 6: Generate Batch Summary
 
-Write/update `~/claude-work/research-assistant/outputs/batch_summary.csv`:
-
+`~/claude-work/research-assistant/outputs/batch_summary.csv`:
 ```csv
 company,domain,score,grade,confidence,score_change,key_change,report_path,last_updated
-Acme Corp,acme.com,16,A,HIGH,+3,New pricing page visits,accounts/acme_corp/report.md,2026-03-04
-Beta Inc,beta.io,8,C,MEDIUM,0,No changes,accounts/beta_inc/report.md,2026-03-04
 ```
-
-Columns:
-- `company`: Company name
-- `domain`: Company domain
-- `score`: Fit score (0-20)
-- `grade`: Letter grade (A/B/C/D)
-- `confidence`: HIGH/MEDIUM/LOW
-- `score_change`: Change from previous run (+N, -N, or 0). "NEW" if first run.
-- `key_change`: One-line summary of most significant change, or "No changes" / "New account"
-- `report_path`: Relative path to full report
-- `last_updated`: Date of this evaluation (YYYY-MM-DD)
+`score_change`: `+N`, `-N`, `0`, or `NEW`. `key_change`: one-line summary or "No changes".
 
 ### Batch Step 7: Batch Summary Output
 
-After all companies processed, display:
-- Total processed count
-- Grade distribution (A: N, B: N, C: N, D: N)
-- Top 10 accounts by score
-- Accounts with biggest score increases (if re-run)
-- Any errors/failures
+Display: total processed, grade distribution, top 10 by score, biggest score increases (if re-run), errors.
 
 ---
 
 ## Graceful Degradation
 
-Every source is optional. The only hard requirement is Claude Code itself. Handle missing sources as follows:
-
 | Source | Failure Behavior |
 |--------|-----------------|
-| **Exa AI** | Fall back to Claude's built-in web search for all the same queries. Results may be less targeted but coverage is equivalent. No confidence penalty. |
-| **Common Room** | Key Contacts section shows "No Common Room data found." Contact intelligence limited to what Gong and web search surface. Report still generates normally. |
-| **Leadfeeder** | Buying Signals dimension caps at 1 (hiring signals only). Note "No website visit data" in Website Engagement section. |
-| **Gong** | Prior Conversations section shows "No prior Gong calls found. Cold outreach." Email Brief adjusts tone accordingly. |
-| **Apollo** | Skip the Apollo write-back. Report saves locally only. Note "Apollo sync skipped" at the end. |
-| **Nothing connected** | Run all research via Claude's built-in web search. Report still generates with fit score, tech stack analysis, hiring signals, and outreach brief. Confidence will be MEDIUM or LOW. This is the minimum viable output. |
+| **Exa AI** | Fall back to Claude's built-in web search. Same queries, equivalent coverage. No confidence penalty. |
+| **Common Room** | Key Contacts section: "No Common Room data found." Contact intelligence from Gong/web only. |
+| **Leadfeeder** | Buying Signals caps at 1. Note "No website visit data" in Website Engagement section. |
+| **Gong** | Prior Conversations: "No prior Gong calls found. Cold outreach." |
+| **Apollo** | Skip write-back. Report saves locally. Note "Apollo sync skipped." |
+| **Nothing connected** | Run all research via Claude's built-in web search. Report generates with fit score, tech stack, hiring signals, and outreach brief. Confidence: MEDIUM or LOW. |
 
 ---
 
-## Model Selection
-
-Use the cheapest model appropriate for each task:
-
-| Task | Model |
-|------|-------|
-| Exa/web research, Common Room, Gong analysis | Sonnet 4.6 (default) |
-| Apollo account lookup + write-back | Haiku 4.5 — purely mechanical curl commands |
-| Leadfeeder field extraction + matching | Haiku 4.5 — no reasoning required |
-| Changelog comparison (old vs new score) | Haiku 4.5 — deterministic comparison |
-| Fit scoring + AE brief generation | Sonnet 4.6 — requires reasoning |
-
 ## Important Guidelines
 
-- The entire final report file MUST be under 1,000,000 characters. If raw intelligence is too large, truncate verbose sections (website crawl, news articles) before assembling the report. Prioritize keeping scoring rationale, contacts, and buying signals intact over raw source data.
-- For web research, prefer Exa MCP tools if available; fall back to Claude's built-in web search if not
-- Be thorough — search multiple sources per dimension
-- Every claim must be tagged with its source
-- Preserve existing changelog entries from previous reports when re-running
-- In batch mode, save incrementally — don't wait until the end
-- If a company slug collision occurs (two companies map to same slug), append a number
+- Report file MUST be under 1,000,000 characters. Truncate verbose sections (crawl, news) if needed — preserve scoring rationale, contacts, and buying signals.
+- Every claim must be tagged with its source.
+- Preserve all prior changelog entries when re-running.
+- In batch mode, save incrementally after each company.
+- If slug collision, append a number.
 
 ---
 
