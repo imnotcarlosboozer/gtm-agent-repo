@@ -263,7 +263,9 @@ Score each dimension based on evidence across ALL calls this week. Cite the stro
 
 **{Single most impactful change — one sentence, specific and behavioral}**
 
-[2-3 sentences: why this dimension matters most right now, what pattern was observed, what to do differently. Reference a specific call moment.]
+[2-3 sentences: why this dimension matters most right now, what pattern was observed, what to do differently.]
+
+> "{Exact quote from the most representative moment}" — {Account}, {date} ([link]({deep_link}))
 
 ---
 
@@ -298,6 +300,8 @@ Score each dimension based on evidence across ALL calls this week. Cite the stro
 **What worked**
 - [Specific moment] ([link]({deep_link}))
   > "{exact quote}"
+
+*(Every bullet in What worked must have a deep link and an exact quote — same standard as What to work on.)*
 
 **What to work on**
 - [Specific moment] ([link]({deep_link}))
@@ -355,7 +359,7 @@ Output the full report. No preamble — start directly with the report content.
 
 ## Important Guidelines
 
-- Every coachable observation MUST include an exact quote and a deep link. No vague observations without evidence.
+- Every observation in every section — "One Thing to Focus on," "This Week's Highlight," Cross-Call Patterns, and Call-by-Call (both What worked and What to work on) — MUST include an exact quote and a deep link. No exceptions.
 - Every negative observation MUST include a "Try instead" reframe — not just criticism.
 - The "One Thing to Focus On" must be the single highest-leverage change. Do not list multiple things here.
 - Cross-call patterns only if seen in 2+ calls. Don't manufacture patterns from a single instance.
