@@ -10,6 +10,7 @@ Claude Code skills for the Astronomer sales team. Research accounts, review call
 |-------|-------------|-------|
 | [`account-research`](#account-research) | Research any company for Astronomer fit — scored AE brief, tech stack, hiring signals, buying intent, and more | [Setup](#setup-account-research) |
 | [`account-question`](#account-question) | Ask anything about an account using Gong transcripts and saved research | [Setup](#setup-account-question) |
+| [`demo-prep`](#demo-prep) | Generate a ready-to-share SE demo prep brief from Gong call transcripts — attendees, current state, tech stack, use cases, demo flow, and watch-outs | [Setup](#setup-demo-prep) |
 | [`weekly-gong-review`](#weekly-gong-review) | Weekly call coaching report — scorecard, highlights, patterns, deep links to exact timestamps | [Setup](#setup-weekly-gong-review) |
 
 ---
@@ -50,6 +51,22 @@ account-question "Gamma LLC — what did we discuss in the last call?"
 
 ---
 
+### `demo-prep`
+Generate a ready-to-share demo prep brief for a sales engineer. Pulls every Gong call for the account and synthesizes them into a structured doc grounded entirely in what the customer actually said.
+
+**Run it**: type naturally — `"prep the SE for the Acme Corp demo"` or `/demo-prep Acme Corp`
+
+**Output**: Who's on the call (with what each person cares about) · Current state · Tech stack (from transcripts only) · Data products and business use cases · What the champion specifically asked to see · What the technical evaluator cares about · Suggested demo flow with time allocations · Things to watch for. Saves to `~/claude-work/research-assistant/outputs/accounts/<account>/interactions.md`.
+
+```
+/demo-prep Acme Corp
+prep the SE for the Beta Inc demo
+```
+
+**Requires**: Claude Code + Gong transcript script (see [Setup](#setup-demo-prep))
+
+---
+
 ### `weekly-gong-review`
 Weekly call coaching report for an AE. Pulls every call they appeared on (not just ones they hosted), scores 6 dimensions, and links every coaching point to the exact timestamp in the recording.
 
@@ -74,7 +91,50 @@ Jump to the skill you want to use:
 
 - [account-research](#setup-account-research)
 - [account-question](#setup-account-question)
+- [demo-prep](#setup-demo-prep)
 - [weekly-gong-review](#setup-weekly-gong-review)
+
+---
+
+### Setup: demo-prep
+
+This skill only needs the Gong transcript script — no additional MCP servers required beyond what `account-question` already uses.
+
+**1. Install the skill**
+
+```bash
+mkdir -p ~/.claude/skills/demo-prep
+cp skills/demo-prep/SKILL.md ~/.claude/skills/demo-prep/SKILL.md
+```
+
+Restart Claude Code.
+
+**2. Set up the Gong transcript script** (skip if already done for `account-question`)
+
+```bash
+pip install requests python-dateutil
+cp gong_account_transcripts.py ~/claude-work/gong_account_transcripts.py
+```
+
+**3. Add Gong API credentials** (skip if already done)
+
+```bash
+# Add to ~/.zshrc or ~/.bash_profile
+export GONG_ACCESS_KEY=your_access_key
+export GONG_SECRET_KEY=your_secret_key
+```
+
+**4. Run it**
+
+```
+/demo-prep Acme Corp
+```
+
+Claude will fetch all Gong calls for the account, read the transcripts, and produce a structured brief. Output is displayed in the conversation and saved to:
+
+```
+~/claude-work/research-assistant/outputs/accounts/<account>/interactions.md
+```
 
 ---
 
