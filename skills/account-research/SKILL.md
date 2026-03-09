@@ -71,88 +71,94 @@ If either file is missing, stop immediately. Do not proceed — the report will 
 
 Launch both agents simultaneously using the Agent tool with subagent_type="general-purpose":
 
-#### Agent 1: Public Research (Exa AI preferred, built-in web search as fallback)
+#### Agent 1: Public Research (Claude WebSearch + WebFetch as primary; Exa optional)
 
-If `mcp__exa__*` tools are available, use them. Otherwise, use Claude's built-in web search with the same queries.
+Use Claude's built-in **WebSearch** and **WebFetch** tools for all queries. If `mcp__exa__*` tools are also available, they can supplement but are not required. Never wait for Exa if WebSearch is already returning results.
 
 **Execute in two batches to maximize parallelism:**
 
 **Batch A — fire ALL of the following simultaneously (no dependencies between them):**
 
-1. **Company Research**: `mcp__exa__company_research_exa(companyName=COMPANY_NAME)`
+1. **Company Research** — two parallel calls:
 
-   Extract: employee count + growth rate, revenue/funding stage, industry vertical, business model (is the product itself data-intensive?), any tech stack signals, how they describe themselves around data/AI.
-
-2. **Orchestration/Pipeline Evidence**:
+   a) **Crunchbase fetch** — derive the slug from the domain (e.g., `bridgebio.com` → `bridge-bio`, `writer.com` → `writer`). Fetch:
    ```
-   mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} data pipeline orchestration airflow dagster prefect",
-     startPublishedDate=[12 months ago], numResults=5
-   )
+   WebFetch("https://www.crunchbase.com/organization/{slug}")
+   ```
+   If the slug is uncertain, first run `WebSearch('"{COMPANY_NAME}" site:crunchbase.com/organization', numResults=1)` to find the exact URL, then fetch it.
+
+   b) **General company search**:
+   ```
+   WebSearch('"{COMPANY_NAME}" company overview employees revenue funding 2025 2026')
+   ```
+
+   Extract from both: employee count + growth rate, revenue/funding stage (round + amount + date), industry vertical, business model (is the core product data-intensive?), any tech stack signals, how they describe themselves around data/AI.
+
+2. **Orchestration/Pipeline Evidence** — two parallel searches:
+   ```
+   WebSearch('"{COMPANY_NAME}" "Apache Airflow" OR "Airflow DAG" OR "data orchestration" OR "dagster" OR "prefect"')
+   WebSearch('"{COMPANY_NAME}" data pipeline orchestration airflow dagster prefect after:2025-03-09')
    ```
 
    Extract from each result: named orchestration tool (Airflow = existing user; Dagster/Prefect = competitor; Luigi/Argo/Kubeflow/custom = opportunity); data volume/scale (copy exact phrases); pipeline frequency (batch/streaming/real-time); migration stories ("moved from X to Y"); architecture signals (data mesh, lakehouse, microservices). Tag every finding with source URL and date.
 
 3a. **Hiring Signals — job posting discovery**:
    ```
-   mcp__exa__web_search_advanced_exa(
-     query='site:{DOMAIN} (data engineer OR "data platform" OR "platform engineer" OR "data infrastructure")',
-     numResults=5
-   )
+   WebSearch('"{COMPANY_NAME}" site:greenhouse.io OR site:lever.co OR site:ashbyhq.com (data engineer OR "data platform" OR "platform engineer")')
    ```
    If this returns fewer than 2 results, also include in Batch A:
    ```
-   mcp__exa__web_search_advanced_exa(
-     query='"{COMPANY_NAME}" (data engineer OR "data platform") site:greenhouse.io OR site:lever.co OR site:ashbyhq.com',
-     numResults=5
-   )
+   WebSearch('site:{DOMAIN} (data engineer OR "data platform" OR "platform engineer" OR "data infrastructure")')
    ```
 
 4. **Recent News**:
    ```
-   mcp__exa__web_search_exa(query="{COMPANY_NAME} corporate strategy news 2025 2026", numResults=3)
+   WebSearch('"{COMPANY_NAME}" (funding OR acquisition OR "Series" OR layoff OR "new CTO" OR "Chief Data Officer") after:2025-03-09')
    ```
 
    Extract by type: **funding rounds** (stage + amount + stated use of funds — "investing in data infrastructure" is direct signal); **acquisitions** (especially data/AI companies = stack consolidation need); **leadership hires** (new VP Eng or Chief Data Officer = new buying motion); **layoffs/restructuring** (cost-cutting mode = harder sell); **product launches** (new AI/data product = more pipeline complexity); **partnerships** (cloud provider partnerships reveal stack). Tag each with source URL and date.
 
-5. **Website Crawl**: `mcp__exa__crawling_exa(url="https://{DOMAIN}", maxCharacters=2000)`
+5. **Website Crawl**:
+   ```
+   WebFetch(url="https://{DOMAIN}", maxCharacters=2000)
+   ```
 
    Extract: exact language they use to describe themselves around data/scale/automation; customer segments named (enterprise, SMB, regulated industries); any explicit tool or cloud partner mentions; data-intensity signals (copy verbatim: "real-time", "AI-powered", "processes X transactions"); scale claims ("serving 500 enterprise customers"); whether an Engineering or Platform section exists in the nav.
 
-6. **Engineering & Data Blog Posts**:
+6. **Engineering & Data Blog Posts — discovery**:
    ```
-   mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} engineering blog data infrastructure pipeline platform",
-     startPublishedDate=[18 months ago], numResults=5
-   )
+   WebSearch('"{COMPANY_NAME}" (engineering blog OR "data infrastructure" OR "data platform" OR "pipeline") after:2024-09-09')
    ```
 
-   For each post found, extract: specific tools named (exact names, not categories); scale/volume metrics mentioned; architecture decisions quoted verbatim ("we chose X because Y"); pain points described; post date (recent = more relevant). If no engineering blog exists, record "No public engineering blog found" — this is itself a signal of lower data platform maturity.
+   Note the top 2-3 blog post URLs from the results — they will be fetched in full in Batch B. Do not extract from snippets alone.
 
 7. **Product Announcements**:
    ```
-   mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} product launch announcement new feature release",
-     startPublishedDate=[12 months ago], numResults=3
-   )
+   WebSearch('"{COMPANY_NAME}" ("product launch" OR "we launched" OR "now available" OR "announcing") after:2025-03-09')
    ```
 
    Extract: what launched; whether it increases data pipeline complexity (new AI feature, real-time capability, new data product = stronger fit signal). Tag with source URL and date.
 
 8. **Case Studies & Third-Party Mentions**:
    ```
-   mcp__exa__web_search_advanced_exa(query="{COMPANY_NAME} case study customer story", numResults=5)
-   mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} Snowflake OR Databricks OR dbt OR AWS OR Google Cloud OR Azure case study OR customer OR partner",
-     numResults=5
-   )
+   WebSearch('"{COMPANY_NAME}" (Snowflake OR Databricks OR dbt OR AWS OR "Google Cloud" OR Azure) (case study OR customer OR partner)')
    ```
 
    For each case study found, extract: which vendor published it (confirms they are a customer of that tool); every tool/vendor named in the study; use case described (batch ETL / real-time / ML pipelines / etc.); scale numbers if present; exact business problem language (maps directly to Astronomer use cases). Tag with source URL.
 
-**Batch B — fire after Batch A completes (depends on 3a results):**
+9. **Tech Stack — StackShare**:
+   ```
+   WebSearch('"{COMPANY_NAME}" site:stackshare.io')
+   ```
+   If a StackShare profile URL is returned, fetch it:
+   ```
+   WebFetch(that URL, maxCharacters=3000)
+   ```
+   Extract: every tool listed, especially Airflow, Spark, dbt, Snowflake, Databricks, Kafka, Flink. If no StackShare profile found, record "No StackShare profile found."
 
-3b. **Job Posting Crawls**: From the URLs returned by search 3a, crawl the 2-3 most relevant data/platform/engineering postings (maxCharacters=5000 each). From each posting extract:
+**Batch B — fire after Batch A completes (depends on 3a and 6 results):**
+
+3b. **Job Posting Crawls**: From the URLs returned by search 3a, WebFetch the 2-3 most relevant data/platform/engineering postings (maxCharacters=5000 each). From each posting extract:
    - **Named tools** — Airflow, Dagster, Prefect, Spark, dbt, Snowflake, Databricks, Kafka, Flink (Airflow = highest signal)
    - **Scale language** — copy verbatim ("managing hundreds of DAGs", "processing 10M events/day")
    - **Orchestration explicitly mentioned** — quote the exact phrase if present
@@ -162,13 +168,14 @@ If `mcp__exa__*` tools are available, use them. Otherwise, use Claude's built-in
    - **Team name** — Data Platform / ML Infrastructure / Data Engineering / etc.
    - **Seniority** — Staff/Principal = mature org; entry-level = early stage
 
-   Skip if 3a returned no relevant posting URLs. If 3a returned no results at all, run a plain fallback search instead:
+   Skip if 3a returned no relevant posting URLs. If 3a returned no results at all, run this fallback search instead:
    ```
-   mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} hiring data engineer platform engineer",
-     startPublishedDate=[6 months ago], numResults=5
-   )
+   WebSearch('"{COMPANY_NAME}" hiring "data engineer" OR "platform engineer" after:2025-09-09')
    ```
+
+6b. **Engineering Blog Fetches**: WebFetch the top 1-2 blog post URLs identified in search 6 (maxCharacters=5000 each).
+
+   Extract from full post text: specific tools named (exact names); scale/volume metrics; architecture decisions verbatim ("we chose X because Y"); pain points described; post date. If no blog post URLs were found in search 6, record "No public engineering blog found — signals lower data platform maturity."
 
 #### Agent 2: Internal Signals (Leadfeeder + Common Room + Gong)
 
@@ -432,7 +439,7 @@ In a single generation pass, produce the fit score section followed by the accou
 
 **Generated**: {TODAY_DATE}
 **Website**: https://{DOMAIN}
-**Sources**: Exa AI ✓/✗ | Leadfeeder ✓/✗ | Common Room ✓/✗ | Gong ✓/✗
+**Sources**: Web Search ✓ | Leadfeeder ✓/✗ | Common Room ✓/✗ | Gong ✓/✗
 
 ---
 
@@ -519,11 +526,41 @@ Columns: `company_name`, `domain`. Be flexible with header names.
 
 ### Batch Step 2: Pre-fetch Leadfeeder Data
 
-Pull all leads upfront (up to 20 pages of 100):
+**Check disk cache first** to avoid re-fetching on re-runs:
+```bash
+python3 -c "
+import json, os, time
+cache = os.path.expanduser('~/claude-work/leadfeeder-cache/leads.json')
+if os.path.exists(cache):
+    age_hours = (time.time() - os.path.getmtime(cache)) / 3600
+    if age_hours < 24:
+        data = json.load(open(cache))
+        print(f'LEADFEEDER_CACHE_HIT: {len(data)} leads, {age_hours:.1f}h old')
+        exit(0)
+print('LEADFEEDER_CACHE_MISS')
+"
+```
+
+If `LEADFEEDER_CACHE_HIT`: load leads from `~/claude-work/leadfeeder-cache/leads.json` and skip the API calls below.
+
+If `LEADFEEDER_CACHE_MISS`: pull all leads via API (up to 20 pages of 100):
 ```
 mcp__leadfeeder__get_leads(account_id="281783", start_date=[6mo ago], end_date=[today], page_size=100, page=N)
 ```
 Stop when a page returns <100 results. Store only: `id`, `name`, `website`, `visit_count`, `last_visited_at`.
+
+Then save to cache:
+```bash
+mkdir -p ~/claude-work/leadfeeder-cache/
+# Write collected leads list to file:
+python3 -c "
+import json, os
+# leads = [list of {id, name, website, visit_count, last_visited_at} dicts collected above]
+with open(os.path.expanduser('~/claude-work/leadfeeder-cache/leads.json'), 'w') as f:
+    json.dump(leads, f)
+print(f'Cached {len(leads)} leads')
+"
+```
 
 ### Batch Step 3: Generate Slugs + Check for Resume
 
@@ -704,7 +741,7 @@ Also write a `failed_rerun.csv` to `~/claude-work/research-assistant/outputs/` c
 
 | Source | Failure Behavior |
 |--------|-----------------|
-| **Exa AI** | Fall back to Claude's built-in web search. Same queries, equivalent coverage. No confidence penalty. |
+| **Exa AI** | Optional enhancement only — Claude WebSearch + WebFetch are the primary research tools and require no fallback. If Exa MCP tools are available they can provide additional coverage. |
 | **Common Room** | Key Contacts section: "No Common Room data found." Contact intelligence from Gong/web only. |
 | **Leadfeeder** | Buying Signals caps at 1. Note "No website visit data" in Website Engagement section. |
 | **Gong calls** | Prior Conversations: "No prior Gong calls found. Cold outreach." |
