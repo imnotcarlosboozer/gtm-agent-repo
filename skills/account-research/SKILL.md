@@ -369,14 +369,71 @@ mcp__leadfeeder__get_leads(account_id="281783", start_date=[6mo ago], end_date=[
 Stop when a page returns <100 results. Store only: `id`, `name`, `website`, `visit_count`, `last_visited_at`.
 
 ### Batch Step 3: Check for Resume
-Read `~/claude-work/research-assistant/outputs/batch_summary.csv`. Skip companies where `last_updated` matches today.
 
-### Batch Step 4: Process Companies Sequentially
+For each company, check whether a valid report already exists:
+```bash
+python3 -c "
+import os
+path = os.path.expanduser('~/claude-work/research-assistant/outputs/accounts/{COMPANY_SLUG}/report.md')
+if not os.path.exists(path):
+    print('NEEDS_RUN')
+else:
+    content = open(path).read()
+    if 'Fit Score' in content and 'AE Brief' in content and len(content) >= 1000:
+        print('SKIP')
+    else:
+        print('NEEDS_RUN')  # file exists but is incomplete — rerun it
+"
+```
+Skip only companies that return `SKIP`. Companies with missing or incomplete reports always run, even if they appear in `batch_summary.csv`.
 
-For each unprocessed company:
-1. Run single-company flow (Steps 2–9), matching Leadfeeder from the pre-fetched list.
-2. Update batch summary CSV after each company.
-3. Pause 2 seconds between companies.
+### Batch Step 4: Process Companies (One Isolated Agent Per Company)
+
+For each unprocessed company, run this sequence:
+
+**a) Spawn a subagent:**
+```
+Agent(
+  subagent_type="general-purpose",
+  task="Complete the full account research flow (Steps 2–9 of the account-research skill) for {COMPANY_NAME}, {DOMAIN}. Use the pre-fetched Leadfeeder data provided below to skip the Leadfeeder pagination — match directly by name or domain. Save the report to ~/claude-work/research-assistant/outputs/accounts/{COMPANY_SLUG}/report.md. When done, respond with only: '{COMPANY_NAME} complete' or '{COMPANY_NAME} error: [one-line reason]'.",
+  context="Leadfeeder pre-fetched data: {LEADFEEDER_SUBSET_FOR_THIS_COMPANY}"
+)
+```
+
+The subagent handles everything — Exa, Gong, Common Room, report generation, Apollo sync. Do NOT receive the full report back. Accept only the one-line status response.
+
+**b) Verify the report:**
+After the subagent responds, check:
+```bash
+python3 -c "
+import os, sys
+path = os.path.expanduser('~/claude-work/research-assistant/outputs/accounts/{COMPANY_SLUG}/report.md')
+if not os.path.exists(path):
+    print('FAIL: file missing')
+    sys.exit(1)
+content = open(path).read()
+required = ['Fit Score', 'AE Brief']
+missing = [s for s in required if s not in content]
+if missing:
+    print(f'FAIL: missing sections {missing}')
+    sys.exit(1)
+if len(content) < 1000:
+    print('FAIL: report too short')
+    sys.exit(1)
+print('OK')
+"
+```
+
+**c) Retry once if verification fails:**
+If the check returns anything other than `OK`, spawn the agent one more time with the same prompt. Re-run verification after. If it fails again, mark this company as `FAILED` and move on — do not block the batch.
+
+**d) Log the result:**
+After each company (success or failure), append to `~/claude-work/research-assistant/outputs/batch_run_log.txt`:
+```
+{TIMESTAMP} | {COMPANY_NAME} | {DOMAIN} | SUCCESS  (or FAILED: [reason])
+```
+
+**e) Update batch summary CSV**, then pause 2 seconds before the next company.
 
 ### Batch Step 5: Chunking
 If CSV has >50 companies: process in chunks of 50, pause 10 seconds between chunks.
@@ -387,11 +444,34 @@ If CSV has >50 companies: process in chunks of 50, pause 10 seconds between chun
 ```csv
 company,domain,score,grade,confidence,score_change,key_change,report_path,last_updated
 ```
-`score_change`: `+N`, `-N`, `0`, or `NEW`. `key_change`: one-line summary or "No changes".
+`score_change`: `+N`, `-N`, `0`, or `NEW`. `key_change`: one-line summary or "No changes". For `FAILED` companies, leave score/grade blank and set `key_change` to the failure reason.
 
 ### Batch Step 7: Batch Summary Output
 
-Display: total processed, grade distribution, top 10 by score, biggest score increases (if re-run), errors.
+Display:
+- Total processed / succeeded / failed
+- Grade distribution (successes only)
+- Top 10 by score
+
+If any companies failed, display a **clear remediation block** at the end:
+
+```
+--- COMPANIES REQUIRING RERUN ---
+
+The following X companies did not produce a complete report after 2 attempts.
+To rerun, use: /account-research batch: ~/claude-work/research-assistant/outputs/failed_rerun.csv
+
+Companies:
+- Acme Corp (acme.com) — error: [reason]
+- Beta Inc (beta.com) — error: [reason]
+
+Suggested fixes before rerunning:
+- "file missing" or "report too short": likely a subagent timeout — retry should resolve
+- "missing sections": check ~/claude-work/gong_account_transcripts.py is accessible
+- Any API errors: verify APOLLO_API_KEY, Leadfeeder MCP, and Exa MCP are connected
+```
+
+Also write a `failed_rerun.csv` to `~/claude-work/research-assistant/outputs/` containing only the failed companies (same `company_name,domain` format as the input CSV), ready to pass directly back into the skill.
 
 ---
 
