@@ -75,7 +75,9 @@ Launch both agents simultaneously using the Agent tool with subagent_type="gener
 
 If `mcp__exa__*` tools are available, use them. Otherwise, use Claude's built-in web search with the same queries.
 
-Run these searches (parallel where possible):
+**Execute in two batches to maximize parallelism:**
+
+**Batch A — fire ALL of the following simultaneously (no dependencies between them):**
 
 1. **Company Research**: `mcp__exa__company_research_exa(companyName=COMPANY_NAME)`
 
@@ -91,41 +93,18 @@ Run these searches (parallel where possible):
 
    Extract from each result: named orchestration tool (Airflow = existing user; Dagster/Prefect = competitor; Luigi/Argo/Kubeflow/custom = opportunity); data volume/scale (copy exact phrases); pipeline frequency (batch/streaming/real-time); migration stories ("moved from X to Y"); architecture signals (data mesh, lakehouse, microservices). Tag every finding with source URL and date.
 
-3. **Hiring Signals — careers page first (primary source of truth)**:
-
-   a) Try crawling the company's own careers page in this order, stopping at the first that returns content:
-   ```
-   mcp__exa__crawling_exa(url="https://{DOMAIN}/careers", maxCharacters=5000)
-   mcp__exa__crawling_exa(url="https://{DOMAIN}/jobs", maxCharacters=5000)
-   mcp__exa__crawling_exa(url="https://{DOMAIN}/about/careers", maxCharacters=5000)
-   mcp__exa__crawling_exa(url="https://{DOMAIN}/company/careers", maxCharacters=5000)
-   ```
-
-   b) If the careers page lists individual role URLs, crawl the 2-3 most relevant data/platform/engineering postings (maxCharacters=5000 each). From each posting extract:
-   - **Named tools** — Airflow, Dagster, Prefect, Spark, dbt, Snowflake, Databricks, Kafka, Flink (Airflow = highest signal)
-   - **Scale language** — copy verbatim ("managing hundreds of DAGs", "processing 10M events/day")
-   - **Orchestration explicitly mentioned** — quote the exact phrase if present
-   - **Build vs. maintain framing** — "build our data platform from scratch" = greenfield; "maintain and scale existing pipelines" = rip-and-replace candidate
-   - **Cloud platform** — AWS/GCP/Azure (affects Astro positioning)
-   - **Pain point language** — verbatim: "reliability", "observability", "SLA", "on-call", "data quality"
-   - **Team name** — Data Platform / ML Infrastructure / Data Engineering / etc.
-   - **Seniority** — Staff/Principal = mature org; entry-level = early stage
-   Skip if no data/platform/engineering roles found.
-
-   c) If all careers page attempts fail (404 or empty), fall back to a job board search:
+3a. **Hiring Signals — job posting discovery**:
    ```
    mcp__exa__web_search_advanced_exa(
-     query='"{COMPANY_NAME}" site:greenhouse.io OR site:lever.co OR site:ashbyhq.com OR site:jobs.ashbyhq.com',
+     query='site:{DOMAIN} (data engineer OR "data platform" OR "platform engineer" OR "data infrastructure")',
      numResults=5
    )
    ```
-   Then crawl the top 2 relevant results.
-
-   d) If job board search also returns nothing, run a plain web search (no `category` param):
+   If this returns fewer than 2 results, also include in Batch A:
    ```
    mcp__exa__web_search_advanced_exa(
-     query="{COMPANY_NAME} hiring data engineer platform engineer",
-     startPublishedDate=[6 months ago], numResults=5
+     query='"{COMPANY_NAME}" (data engineer OR "data platform") site:greenhouse.io OR site:lever.co OR site:ashbyhq.com',
+     numResults=5
    )
    ```
 
@@ -136,7 +115,7 @@ Run these searches (parallel where possible):
 
    Extract by type: **funding rounds** (stage + amount + stated use of funds — "investing in data infrastructure" is direct signal); **acquisitions** (especially data/AI companies = stack consolidation need); **leadership hires** (new VP Eng or Chief Data Officer = new buying motion); **layoffs/restructuring** (cost-cutting mode = harder sell); **product launches** (new AI/data product = more pipeline complexity); **partnerships** (cloud provider partnerships reveal stack). Tag each with source URL and date.
 
-5. **Website Crawl**: `mcp__exa__crawling_exa(url="https://{DOMAIN}", maxCharacters=5000)`
+5. **Website Crawl**: `mcp__exa__crawling_exa(url="https://{DOMAIN}", maxCharacters=2000)`
 
    Extract: exact language they use to describe themselves around data/scale/automation; customer segments named (enterprise, SMB, regulated industries); any explicit tool or cloud partner mentions; data-intensity signals (copy verbatim: "real-time", "AI-powered", "processes X transactions"); scale claims ("serving 500 enterprise customers"); whether an Engineering or Platform section exists in the nav.
 
@@ -171,7 +150,25 @@ Run these searches (parallel where possible):
 
    For each case study found, extract: which vendor published it (confirms they are a customer of that tool); every tool/vendor named in the study; use case described (batch ETL / real-time / ML pipelines / etc.); scale numbers if present; exact business problem language (maps directly to Astronomer use cases). Tag with source URL.
 
-9. **Job Description Details** — already handled in search 3b above. No additional step needed.
+**Batch B — fire after Batch A completes (depends on 3a results):**
+
+3b. **Job Posting Crawls**: From the URLs returned by search 3a, crawl the 2-3 most relevant data/platform/engineering postings (maxCharacters=5000 each). From each posting extract:
+   - **Named tools** — Airflow, Dagster, Prefect, Spark, dbt, Snowflake, Databricks, Kafka, Flink (Airflow = highest signal)
+   - **Scale language** — copy verbatim ("managing hundreds of DAGs", "processing 10M events/day")
+   - **Orchestration explicitly mentioned** — quote the exact phrase if present
+   - **Build vs. maintain framing** — "build our data platform from scratch" = greenfield; "maintain and scale existing pipelines" = rip-and-replace candidate
+   - **Cloud platform** — AWS/GCP/Azure (affects Astro positioning)
+   - **Pain point language** — verbatim: "reliability", "observability", "SLA", "on-call", "data quality"
+   - **Team name** — Data Platform / ML Infrastructure / Data Engineering / etc.
+   - **Seniority** — Staff/Principal = mature org; entry-level = early stage
+
+   Skip if 3a returned no relevant posting URLs. If 3a returned no results at all, run a plain fallback search instead:
+   ```
+   mcp__exa__web_search_advanced_exa(
+     query="{COMPANY_NAME} hiring data engineer platform engineer",
+     startPublishedDate=[6 months ago], numResults=5
+   )
+   ```
 
 #### Agent 2: Internal Signals (Leadfeeder + Common Room + Gong)
 
@@ -403,6 +400,8 @@ For each call:
 [full transcript text]
 ```
 
+**Size constraint**: The entire RAW INTELLIGENCE block must be under 3,000 words. Fill in only the labeled field values — do NOT paste raw search result snippets, full crawl text, or unprocessed API responses verbatim. If a field has no data, write `[not found]`. Every entry should be a single extracted fact, quote, or short list.
+
 ### Step 5: Generate Fit Score + Account Research (Single Pass)
 
 Read both prompt templates:
@@ -572,16 +571,16 @@ else:
 ```
 Skip only companies that return `SKIP`. Incomplete or missing reports always run.
 
-### Batch Step 4: Process Companies (One Isolated Agent Per Company)
+### Batch Step 4: Process Companies (Groups of 3 Simultaneous Subagents)
 
-For each unprocessed company, run this sequence:
+Process companies in groups of 3. For each group of up to 3 unprocessed companies:
 
-**a) Pre-match Leadfeeder from the pre-fetched list:**
-Search the pre-fetched leads for a record where `name` or `website` matches `{COMPANY_NAME}` or `{DOMAIN}`. Store as `LEADFEEDER_MATCH`:
+**a) Pre-match Leadfeeder for all companies in the group** (before spawning any subagents):
+For each company, search the pre-fetched leads for a record where `name` or `website` matches `{COMPANY_NAME}` or `{DOMAIN}`. Store as `LEADFEEDER_MATCH`:
 - If found: `{ lead_id, name, website, visit_count, last_visited_at }`
 - If not found: `"no match"`
 
-**b) Spawn a subagent with fully self-contained instructions:**
+**b) Spawn all subagents in the group simultaneously** (parallel Agent calls — do not wait for one before starting the next):
 
 The subagent has no access to this skill file. The task string must embed everything it needs. Construct the task as follows — substitute all `{variables}` before passing:
 
@@ -645,10 +644,10 @@ or on failure:
 {TIMESTAMP} | {COMPANY_NAME} | {DOMAIN} | FAILED: [verification error]
 ```
 
-**g) Update batch summary CSV**, then pause 2 seconds before the next company.
+**g) Update batch summary CSV for all companies in the group**, then pause 2 seconds before the next group.
 
 ### Batch Step 5: Chunking
-If CSV has >50 companies: process in chunks of 50, pause 10 seconds between chunks.
+If CSV has >50 companies: process in chunks of 50 (i.e. ~17 groups of 3), pause 10 seconds between chunks.
 
 ### Batch Step 6: Generate Batch Summary
 
