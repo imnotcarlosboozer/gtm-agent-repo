@@ -8,8 +8,19 @@ Generates a comprehensive quarterly pipeline report including:
 - Existing research reports (if previously saved)
 
 Usage:
-    python quarterly_pipeline_context.py --rep "Vishwa" --quarter "Q1 2026" --fiscal
+    # Use any rep name (auto-resolves to email):
+    python quarterly_pipeline_context.py --rep "Thomas Messana" --quarter "Q1 2026" --fiscal
+
+    # Or use email directly:
     python quarterly_pipeline_context.py --rep "vishwa.srinivasan@astronomer.io" --quarter "Q1"
+
+    # Calendar quarters instead of fiscal:
+    python quarterly_pipeline_context.py --rep "John Doe" --quarter "Q2 2026" --calendar
+
+Output location: ~/Pipeline Reports/[Rep Name]/Q1_2026/
+
+Note: Rep name is automatically converted to email using firstname.lastname@astronomer.io pattern
+      and validated against Gong data.
 """
 
 import json
@@ -27,24 +38,128 @@ from base64 import b64encode
 import requests
 
 
-# Rep name to email mapping
+# Rep name to email mapping (optional - used as fallback for backward compatibility)
+# The script now auto-constructs emails from names, so this map is no longer required.
+# Add entries here only for non-standard name-to-email mappings.
 REP_EMAIL_MAP = {
     "vishwa": "vishwa.srinivasan@astronomer.io",
     "vishwa srinivasan": "vishwa.srinivasan@astronomer.io",
 }
 
 
-def parse_rep_name(name: str) -> str:
-    """Map rep name to email, allow direct email input."""
-    name_lower = name.lower().strip()
+def auto_construct_email(name: str, domain: str = "astronomer.io") -> str:
+    """
+    Auto-construct email from name using firstname.lastname@domain pattern.
 
+    Examples:
+        "Thomas Messana" -> "thomas.messana@astronomer.io"
+        "John Doe Smith" -> "john.doesmith@astronomer.io"
+    """
+    # Clean and normalize the name
+    name = name.strip()
+
+    # If already an email, return as-is
     if "@" in name:
-        return name  # Already an email
+        return name.lower()
 
-    if name_lower in REP_EMAIL_MAP:
-        return REP_EMAIL_MAP[name_lower]
+    # Split name into parts and convert to lowercase
+    parts = name.lower().split()
 
-    raise ValueError(f"Unknown rep name: {name}. Add to REP_EMAIL_MAP or provide email directly.")
+    if not parts:
+        raise ValueError(f"Invalid name: '{name}'")
+
+    # Join all parts with dots (firstname.middlename.lastname)
+    local_part = ".".join(parts)
+
+    # Remove any special characters that aren't valid in emails
+    local_part = "".join(c for c in local_part if c.isalnum() or c == ".")
+
+    return f"{local_part}@{domain}"
+
+
+def extract_all_reps_from_calls(calls_data: list) -> dict:
+    """
+    Extract all internal reps from Gong calls data.
+
+    Returns:
+        dict: {email: {name, title, affiliation}} for all internal parties
+    """
+    reps = {}
+
+    for call in calls_data:
+        for party in call.get("parties", []):
+            email = party.get("emailAddress")
+            affiliation = (party.get("affiliation") or "").lower()
+
+            # Only include internal users with emails
+            if email and affiliation == "internal":
+                if email not in reps:
+                    reps[email] = {
+                        "name": party.get("name", "Unknown"),
+                        "title": party.get("title", ""),
+                        "affiliation": party.get("affiliation", "")
+                    }
+
+    return reps
+
+
+def find_rep_email(rep_input: str, calls_data: list) -> Optional[str]:
+    """
+    Intelligently resolve rep name to email using multiple strategies.
+
+    Strategies:
+    1. If input is already an email, return it
+    2. Check hardcoded REP_EMAIL_MAP for known mappings
+    3. Auto-construct email from name
+    4. Search Gong data for matching email
+    5. Fuzzy match by name in Gong data
+
+    Returns:
+        str: Resolved email address or None if not found
+    """
+    rep_input = rep_input.strip()
+
+    # Strategy 1: Already an email
+    if "@" in rep_input:
+        return rep_input.lower()
+
+    # Strategy 2: Check hardcoded map (backward compatibility)
+    rep_lower = rep_input.lower()
+    if rep_lower in REP_EMAIL_MAP:
+        return REP_EMAIL_MAP[rep_lower]
+
+    # Strategy 3: Auto-construct email
+    try:
+        constructed_email = auto_construct_email(rep_input)
+    except ValueError:
+        return None
+
+    # Strategy 4 & 5: Validate against Gong data
+    reps = extract_all_reps_from_calls(calls_data)
+
+    # Check if auto-constructed email exists in Gong data
+    if constructed_email in reps:
+        return constructed_email
+
+    # Fuzzy match by name
+    rep_lower = rep_input.lower()
+    for email, info in reps.items():
+        rep_name = info.get("name", "").lower()
+        # Check if the input name appears in the Gong rep name
+        if rep_lower in rep_name or rep_name in rep_lower:
+            return email
+
+    # Return auto-constructed email even if not validated
+    # (will be validated later when extracting opportunities)
+    return constructed_email
+
+
+def parse_rep_name(name: str) -> str:
+    """
+    Normalize rep name/email input (deprecated - kept for backward compatibility).
+    Actual email resolution now happens in main() using find_rep_email().
+    """
+    return name.strip()
 
 
 def parse_quarter_input(quarter_str: str) -> Tuple[int, int]:
@@ -602,7 +717,12 @@ def find_existing_research(account_name: str) -> Optional[Path]:
 def organize_outputs(quarter: int, year: int, opportunities: dict, rep_email: str,
                      output_base: str, fiscal: bool, calls_data: list, skip_transcripts: bool = False):
     """Create quarterly folder structure and populate with content."""
-    quarter_folder = Path(output_base) / f"Q{quarter}_{year}_Pipeline"
+    # Extract rep name from email for folder organization
+    rep_name = rep_email.split('@')[0].replace('.', ' ').title()
+
+    # Organize under rep's folder: Pipeline Reports/[Rep Name]/Q1_2026/
+    rep_folder = Path(output_base) / rep_name
+    quarter_folder = rep_folder / f"Q{quarter}_{year}"
     accounts_folder = quarter_folder / "Accounts"
     accounts_folder.mkdir(parents=True, exist_ok=True)
 
@@ -610,7 +730,7 @@ def organize_outputs(quarter: int, year: int, opportunities: dict, rep_email: st
     accounts = extract_unique_accounts(opportunities)
 
     # Generate main pipeline report (after account names are parsed)
-    main_report_path = quarter_folder / f"Q{quarter}_{year}_Pipeline_Report.md"
+    main_report_path = quarter_folder / f"Pipeline_Report.md"
     generate_pipeline_report(opportunities, rep_email, year, quarter, main_report_path, fiscal)
 
     # Calculate quarter date range
@@ -670,7 +790,7 @@ def main():
     )
     parser.add_argument('--rep', required=True, help='Rep name or email')
     parser.add_argument('--quarter', required=True, help='Quarter string (e.g., "Q1 2026", "Q1")')
-    parser.add_argument('--output-base', default=str(Path.home() / "Account Context"),
+    parser.add_argument('--output-base', default=str(Path.home() / "Pipeline Reports"),
                         help='Base output directory')
     parser.add_argument('--fiscal', action='store_true', default=True,
                         help='Use fiscal quarters (Feb=Q1 start)')
@@ -686,11 +806,11 @@ def main():
 
     # Parse inputs
     print("Parsing inputs...")
-    rep_email = parse_rep_name(args.rep)
+    rep_input = parse_rep_name(args.rep)
     quarter, year = parse_quarter_input(args.quarter)
     fiscal = args.fiscal and not args.calendar
 
-    print(f"  Rep: {rep_email}")
+    print(f"  Rep input: {rep_input}")
     print(f"  Quarter: Q{quarter} {year} ({'Fiscal' if fiscal else 'Calendar'})")
 
     # Load global Gong cache
@@ -706,14 +826,51 @@ def main():
         calls_data = json.load(f)
     print(f"  Found {len(calls_data)} calls")
 
-    # Extract opportunities
-    print(f"\nExtracting Q{quarter} {year} opportunities for {rep_email}...")
-    opportunities = extract_opportunities(calls_data, rep_email, year, quarter, fiscal)
+    # Resolve rep email from name using multi-strategy approach
+    print(f"\nResolving rep email...")
+    rep_email = find_rep_email(rep_input, calls_data)
 
-    if not opportunities:
-        print(f"\n⚠️  No opportunities found for Q{quarter} {year}")
-        return 0
+    if not rep_email:
+        print(f"  ❌ Could not resolve email for: {rep_input}")
+        print(f"  Try providing the email directly: --rep email@astronomer.io")
+        return 1
 
+    # Show what email was resolved
+    if rep_email != rep_input:
+        print(f"  ✓ Resolved '{rep_input}' → {rep_email}")
+    else:
+        print(f"  ✓ Using email: {rep_email}")
+
+    # Validate by checking if we'll find any opportunities
+    print(f"  Validating against Gong data...")
+    test_opps = extract_opportunities(calls_data, rep_email, year, quarter, fiscal)
+
+    if not test_opps:
+        print(f"  ⚠️  No opportunities found for {rep_email} in Q{quarter} {year}")
+        print(f"  This could mean:")
+        print(f"    • No calls with this rep in the specified quarter")
+        print(f"    • Email address is incorrect")
+        print(f"    • Rep has no opportunities closing in this quarter")
+
+        # Try to find the rep in Gong data to give better feedback
+        reps = extract_all_reps_from_calls(calls_data)
+        if rep_email in reps:
+            print(f"  Note: Email found in Gong data as '{reps[rep_email]['name']}'")
+        else:
+            print(f"  Note: Email NOT found in Gong data - please verify the spelling")
+            print(f"\n  Available internal reps in Gong data:")
+            # Show first 10 reps as examples
+            for i, (email, info) in enumerate(list(reps.items())[:10]):
+                print(f"    • {info['name']} ({email})")
+            if len(reps) > 10:
+                print(f"    ... and {len(reps) - 10} more")
+
+        return 1
+
+    print(f"  ✓ Validated: found {len(test_opps)} opportunities")
+
+    # Use the opportunities we already extracted during validation
+    opportunities = test_opps
     print(f"  Found {len(opportunities)} unique opportunities")
 
     # Organize outputs
