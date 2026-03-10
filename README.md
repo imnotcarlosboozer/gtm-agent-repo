@@ -12,6 +12,7 @@ Claude Code skills for the Astronomer sales team. Research accounts, review call
 | [`account-question`](#account-question) | Ask anything about an account using Gong transcripts and saved research | [Setup](#setup-account-question) |
 | [`demo-prep`](#demo-prep) | Generate a ready-to-share SE demo prep brief from Gong call transcripts — attendees, current state, tech stack, use cases, etc. | [Setup](#setup-demo-prep) |
 | [`weekly-gong-review`](#weekly-gong-review) | Weekly call coaching report — scorecard, highlights, patterns, deep links to exact timestamps | [Setup](#setup-weekly-gong-review) |
+| [`quarterly-pipeline-report`](#quarterly-pipeline-report) | Generate quarterly pipeline report with Gong transcripts and research for each account | [Setup](#setup-quarterly-pipeline-report) |
 
 ---
 
@@ -85,6 +86,30 @@ Weekly call coaching report for an AE. Pulls every call they appeared on (not ju
 
 ---
 
+### `quarterly-pipeline-report`
+Generate a comprehensive quarterly pipeline report with Gong call transcripts and existing research for each account in your pipeline.
+
+**Run it**: `/quarterly-pipeline-report` or type naturally — `"generate Q1 2026 pipeline report"` or `"quarterly pipeline for Vishwa"`
+
+**Output**: Pipeline opportunities table (filtered by rep and quarter) · Gong transcripts for each account (filtered to quarter dates) · Existing research reports copied to pipeline folder · Stage breakdown with total pipeline value · Top accounts by call volume
+
+```
+/quarterly-pipeline-report                      # defaults to Vishwa, current quarter
+quarterly-pipeline-report "Q1 2026"            # specific quarter
+quarterly-pipeline-report "Vishwa Q2 2026"     # specific rep and quarter
+```
+
+Output is organized at `~/Account Context/Q{N}_{YEAR}_Pipeline/` with:
+- Main pipeline report with opportunities table
+- Per-account folders with Gong transcripts (quarter-filtered)
+- Existing research files copied from `~/Account Context/[Company]/`
+
+**Fiscal quarters** (default): Q1=Feb-Apr, Q2=May-Jul, Q3=Aug-Oct, Q4=Nov-Jan
+
+**Requires**: Claude Code + Gong cache synced (see [Setup](#setup-quarterly-pipeline-report))
+
+---
+
 ## Setup
 
 Jump to the skill you want to use:
@@ -93,6 +118,7 @@ Jump to the skill you want to use:
 - [account-question](#setup-account-question)
 - [demo-prep](#setup-demo-prep)
 - [weekly-gong-review](#setup-weekly-gong-review)
+- [quarterly-pipeline-report](#setup-quarterly-pipeline-report)
 
 ---
 
@@ -347,6 +373,93 @@ account-research "batch: ~/claude-work/research-assistant/inputs/accounts.csv"
 ```
 
 Reports save to `~/claude-work/research-assistant/outputs/accounts/<company>/report.md` and sync to Apollo automatically.
+
+---
+
+### Setup: quarterly-pipeline-report
+
+This skill pulls pipeline data from Gong's Salesforce integration and generates per-account context.
+
+**1. Install the skill**
+
+```bash
+mkdir -p ~/.claude/skills/quarterly-pipeline-report
+cp skills/quarterly-pipeline-report/SKILL.md ~/.claude/skills/quarterly-pipeline-report/SKILL.md
+```
+
+Copy the pipeline script to your Scripts folder:
+
+```bash
+mkdir -p ~/Scripts
+cp scripts/quarterly_pipeline_context.py ~/Scripts/
+chmod +x ~/Scripts/quarterly_pipeline_context.py
+```
+
+Restart Claude Code.
+
+**2. Set up the Gong transcript script** (skip if already done for `account-question`)
+
+```bash
+pip install requests python-dateutil
+cp gong_account_transcripts.py ~/claude-work/gong_account_transcripts.py
+```
+
+**3. Add Gong API credentials** (skip if already done)
+
+```bash
+# Add to ~/.zshrc or ~/.bash_profile
+export GONG_ACCESS_KEY=your_access_key
+export GONG_SECRET_KEY=your_secret_key
+```
+
+```bash
+source ~/.zshrc
+```
+
+**4. Sync the Gong cache**
+
+The skill uses a cached index of all Gong calls for fast filtering. Sync it once:
+
+```bash
+python3 ~/claude-work/gong_account_transcripts.py --sync
+```
+
+This creates `~/claude-work/gong-cache/all_calls/calls.json` with all call metadata.
+
+**Optional**: Set up daily sync (recommended for large Gong instances):
+
+```bash
+# crontab -e
+0 6 * * * python3 ~/claude-work/gong_account_transcripts.py --sync
+```
+
+**5. Update rep email mapping** (if using for multiple reps)
+
+Edit `~/Scripts/quarterly_pipeline_context.py` and add entries to `REP_EMAIL_MAP`:
+
+```python
+REP_EMAIL_MAP = {
+    "vishwa": "vishwa.srinivasan@astronomer.io",
+    "alec": "alec.dolton@astronomer.io",
+    # Add more reps here
+}
+```
+
+**6. Run it**
+
+```
+/quarterly-pipeline-report
+quarterly-pipeline-report "Q1 2026"
+quarterly-pipeline-report "Vishwa Q2 2026"
+```
+
+Or run the script directly:
+
+```bash
+python3 ~/Scripts/quarterly_pipeline_context.py --rep "Vishwa" --quarter "Q1 2026" --fiscal
+```
+
+Output location: `~/Account Context/Q{N}_{YEAR}_Pipeline/`
 
 ---
 
