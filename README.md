@@ -488,3 +488,59 @@ Optional daily sync cron (recommended for large Gong instances):
 ```
 
 </details>
+
+<details>
+<summary>QMD semantic search integration</summary>
+
+**What**: Convert Gong JSON transcripts to markdown for instant semantic search via QMD
+
+**Why**: Skip API calls for cached accounts (4-6x faster) + enable cross-account intelligence queries
+
+**Setup**:
+
+1. **Install QMD MCP server** (add to `~/.claude/settings.json`):
+```json
+{
+  "mcpServers": {
+    "qmd": {
+      "command": "npx",
+      "args": ["-y", "@tobilu/qmd", "mcp"]
+    }
+  }
+}
+```
+
+2. **Convert existing transcripts to markdown**:
+```bash
+python3 gong_json_to_markdown.py --all
+```
+
+3. **Index in QMD**:
+```bash
+npx -y @tobilu/qmd update gong
+npx -y @tobilu/qmd embed
+```
+
+4. **Test semantic search**:
+```bash
+npx -y @tobilu/qmd query "Kubernetes migration challenges" -c gong
+npx -y @tobilu/qmd query "pricing objections" -c gong
+```
+
+**Architecture**: Dual-format strategy maintains both JSON (source of truth) and markdown (QMD index). The conversion script tracks staleness via `metadata.json` timestamps and auto-updates when JSON changes.
+
+**Cross-account queries**: Search across all cached accounts semantically:
+```bash
+npx -y @tobilu/qmd query "accounts discussing Dagster as competitor" -c gong
+npx -y @tobilu/qmd query "MWAA migration concerns" -c gong
+```
+
+**Automated sync**: Add to your daily Gong cron:
+```bash
+# crontab -e
+0 6 * * * cd ~/claude-work && python3 gong_account_transcripts.py --sync && python3 gong_json_to_markdown.py --sync && npx -y @tobilu/qmd update gong
+```
+
+See [docs/qmd-integration-plan.md](docs/qmd-integration-plan.md) for full implementation details.
+
+</details>
