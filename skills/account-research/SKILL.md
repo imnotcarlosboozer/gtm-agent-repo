@@ -16,7 +16,7 @@ The user has provided: {{args}}
 - Batch force-rerun: `batch: /path/to/file.csv force` — re-researches all companies even if a complete report already exists (use after skill updates to refresh all reports)
 
 ## Constants
-- **Leadfeeder Account ID**: `{YOUR_LEADFEEDER_ACCOUNT_ID}` — find this in Leadfeeder → Settings → Account
+- **Leadfeeder Account ID**: `281783`
 - **Prompts Directory**: `~/claude-work/research-assistant/prompts/`
 - **Output Directory**: `~/claude-work/research-assistant/outputs/accounts/`
 
@@ -142,12 +142,28 @@ Use Claude's built-in **WebSearch** and **WebFetch** tools for all queries. If `
    WebSearch('site:{DOMAIN} ("data engineer" OR "data platform" OR "platform engineer" OR "ML engineer" OR "MLOps" OR "analytics engineer" OR "data architect" OR "data infrastructure")')
    ```
 
-4. **Recent News**:
+4. **Recent News** — two parallel searches:
+
+   **General news**:
    ```
    WebSearch('"{COMPANY_NAME}" (funding OR acquisition OR "Series" OR layoff OR "new CTO" OR "Chief Data Officer") after:2025-03-09')
    ```
 
-   Extract by type: **funding rounds** (stage + amount + stated use of funds — "investing in data infrastructure" is direct signal); **acquisitions** (especially data/AI companies = stack consolidation need); **leadership hires** (new VP Eng or Chief Data Officer = new buying motion); **layoffs/restructuring** (cost-cutting mode = harder sell); **product launches** (new AI/data product = more pipeline complexity); **partnerships** (cloud provider partnerships reveal stack). Tag each with source URL and date.
+   **M&A / corporate events** (look back to 2023 — these events affect outreach for years):
+   ```
+   WebSearch('"{COMPANY_NAME}" (acquired OR "acquisition of" OR "acquired by" OR "merger with" OR "merged with" OR "went public" OR IPO OR SPAC OR "filed for bankruptcy" OR "chapter 11" OR "shutting down" OR "wind down" OR "ceasing operations") after:2023-01-01')
+   ```
+
+   From the general news search, extract by type: **funding rounds** (stage + amount + stated use of funds — "investing in data infrastructure" is direct signal); **leadership hires** (new VP Eng or Chief Data Officer = new buying motion); **layoffs/restructuring** (cost-cutting mode = harder sell); **product launches** (new AI/data product = more pipeline complexity); **partnerships** (cloud provider partnerships reveal stack). Tag each with source URL and date.
+
+   From the M&A search, determine **M&A STATUS** — one of:
+   - **ACQUIRED**: company was bought by another; note acquirer + date + any stated rationale
+   - **MERGER**: merged with another entity; note merged entity + date
+   - **IPO**: went public; note exchange + date
+   - **BANKRUPTCY/SHUTDOWN**: filed for bankruptcy or ceased operations; note date
+   - **NONE FOUND**: no M&A events found
+
+   If M&A status is anything other than NONE FOUND: this is the most important finding in the report. It affects who to contact, whether budget exists, and whether the stack will be consolidated. Flag it prominently.
 
 5. **Website Crawl**:
    ```
@@ -234,12 +250,12 @@ Launch **Leadfeeder, Common Room, and Gong simultaneously** — three parallel t
 
 If `LEADFEEDER_CACHE_HIT` from pre-flight: search `LEADFEEDER_LEADS` in memory for a record where `name` or `website` matches `{COMPANY_NAME}` or `{DOMAIN}`. If found, set `MATCHED_LEAD_ID` and call:
 ```
-mcp__leadfeeder__get_lead_visits(account_id="{YOUR_LEADFEEDER_ACCOUNT_ID}", lead_id=MATCHED_LEAD_ID, start_date=[6mo ago], end_date=[today])
+mcp__leadfeeder__get_lead_visits(account_id="281783", lead_id=MATCHED_LEAD_ID, start_date=[6mo ago], end_date=[today])
 ```
 
 If `LEADFEEDER_CACHE_MISS`: paginate up to 5 pages to find a match:
 ```
-mcp__leadfeeder__get_leads(account_id="{YOUR_LEADFEEDER_ACCOUNT_ID}", start_date=[6mo ago], end_date=[today], page_size=100, page=1)
+mcp__leadfeeder__get_leads(account_id="281783", start_date=[6mo ago], end_date=[today], page_size=100, page=1)
 ```
 Match by name or domain. If found, call `get_lead` and `get_lead_visits`. Then save all fetched leads to cache so future runs are instant:
 ```bash
@@ -368,8 +384,12 @@ For each relevant result:
 **Seniority signal**: [Staff/Principal/Director = mature org / entry-level = early stage]
 
 ### Recent News
-For each relevant item:
-- **Type**: [funding / acquisition / leadership hire / layoff / product launch / partnership]
+
+**M&A STATUS**: [ACQUIRED by {Buyer} on {date} / MERGER with {Company} on {date} / IPO on {date} / BANKRUPTCY filed {date} / SHUTDOWN on {date} / NONE FOUND]
+**M&A Impact**: [If not NONE FOUND — 1-2 sentences on what this means for outreach: who is now the buyer, whether budget is frozen, whether stack will be consolidated into parent]
+
+For each additional news item:
+- **Type**: [funding / leadership hire / layoff / product launch / partnership]
 - **Summary**: [1-2 sentences]
 - **Signal for Astronomer**: [what this means — e.g. "Series C = budget for tooling", "new CDO = buying motion likely", "layoffs = cost-cutting mode"]
 - **Source + date**: [URL — date]
@@ -518,6 +538,7 @@ In a single generation pass, produce the fit score section followed by the accou
 - New hiring signals mentioning Airflow/orchestration/data platform
 - New Common Room contacts with VP Eng / Head of Data titles
 - New funding or acquisitions
+- **M&A event detected** (acquisition, merger, IPO, bankruptcy, or shutdown) — always generate a changelog entry regardless of score change
 - **Signal lost**: if a previously cited high-signal finding is no longer present in this run, note it explicitly — e.g. "Signal lost: Airflow job posting (Senior Data Engineer, cited 2026-01-15) no longer found — likely filled or expired" or "Signal lost: key contact [Name] no longer appears at company." This is critical context for score drops — the changelog entry should explain *why* the score changed, not just *that* it changed.
 
 ```markdown
@@ -526,6 +547,10 @@ In a single generation pass, produce the fit score section followed by the accou
 **Generated**: {TODAY_DATE}
 **Website**: https://{DOMAIN}
 **Sources**: Web Search ✓ | Leadfeeder ✓/✗ | Common Room ✓/✗ | Gong ✓/✗
+
+[If M&A STATUS is anything other than NONE FOUND, insert this block immediately after the header:]
+> **M&A ALERT: {M&A STATUS}**
+> {M&A Impact — who acquired them, what it means for outreach, whether to contact this account or the parent. Include the date and source URL.}
 
 ---
 
@@ -557,7 +582,7 @@ Overwrite: `~/claude-work/research-assistant/outputs/accounts/{company_slug}/rep
 
 Skip entirely if no `APOLLO_API_KEY` (from pre-flight). Log "Apollo sync skipped — no API key."
 
-- **Field ID**: `{YOUR_APOLLO_FIELD_ID}`
+- **Field ID**: `6998b33edacda9000deb48ca`
 - Use `typed_custom_fields` (keyed by field ID), NOT `custom_fields` (silently ignored)
 
 1. Find account — search by name, confirm by domain:
@@ -589,7 +614,7 @@ Skip entirely if no `APOLLO_API_KEY` (from pre-flight). Log "Apollo sync skipped
 
    RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X PUT "https://api.apollo.io/v1/accounts/{ACCOUNT_ID}" \
      -H "Content-Type: application/json" \
-     -d "{\"api_key\": \"$APOLLO_API_KEY\", \"typed_custom_fields\": {\"{YOUR_APOLLO_FIELD_ID}\": $(echo "$APOLLO_REPORT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' )}}")
+     -d "{\"api_key\": \"$APOLLO_API_KEY\", \"typed_custom_fields\": {\"6998b33edacda9000deb48ca\": $(echo "$APOLLO_REPORT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' )}}")
    HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
    if [ "$HTTP_STATUS" = "200" ]; then
      echo "Apollo: write succeeded"
@@ -601,7 +626,31 @@ Skip entirely if no `APOLLO_API_KEY` (from pre-flight). Log "Apollo sync skipped
 
 ### Step 9: Present Results
 
-Display the final report. Highlight fit score/grade, notable buying signals, and changelog if this is a re-run.
+**Before displaying the report**, check the M&A STATUS field from the RAW INTELLIGENCE block. If it is anything other than NONE FOUND, output this alert first as a standalone message — before the score, before the report, before anything else:
+
+```
+⚠️  M&A ALERT: {COMPANY_NAME}
+{M&A STATUS} — {date}
+{1-2 sentence plain-English summary: who acquired them / what the merger was / what happened, and what the rep should do next — e.g. "Acme Corp was acquired by BigCo in March 2025. You may need to route this to the BigCo account owner before pursuing — check with your manager."}
+Source: {URL}
+```
+
+If M&A STATUS is NONE FOUND, skip the alert entirely.
+
+Then display the full report. Highlight fit score/grade, notable buying signals, and changelog if this is a re-run.
+
+**For batch mode**, after the batch summary table, add a separate section listing any M&A alerts across all completed accounts:
+
+```
+--- M&A ALERTS ---
+The following accounts had acquisition, merger, or other corporate events detected.
+Verify account ownership before outreach:
+
+- Acme Corp — ACQUIRED by BigCo (March 2025) — may need re-routing
+- Beta Inc — BANKRUPTCY filed (Jan 2025) — do not pursue
+```
+
+If no M&A events were found across the batch, omit this section entirely.
 
 ---
 
@@ -631,7 +680,7 @@ If `LEADFEEDER_CACHE_HIT`: load leads from `~/claude-work/leadfeeder-cache/leads
 
 If `LEADFEEDER_CACHE_MISS`: pull all leads via API (up to 20 pages of 100):
 ```
-mcp__leadfeeder__get_leads(account_id="{YOUR_LEADFEEDER_ACCOUNT_ID}", start_date=[6mo ago], end_date=[today], page_size=100, page=N)
+mcp__leadfeeder__get_leads(account_id="281783", start_date=[6mo ago], end_date=[today], page_size=100, page=N)
 ```
 Stop when a page returns <100 results. Store only: `id`, `name`, `website`, `visit_count`, `last_visited_at`.
 
@@ -721,7 +770,7 @@ Do NOT return the report content in your response.
 
 === LEADFEEDER DATA (pre-fetched) ===
 {LEADFEEDER_MATCH}
-If a lead_id is provided above, call mcp__leadfeeder__get_lead_visits(account_id="{YOUR_LEADFEEDER_ACCOUNT_ID}", lead_id=<id>, start_date=<6mo ago>, end_date=<today>) to get page visit URLs.
+If a lead_id is provided above, call mcp__leadfeeder__get_lead_visits(account_id="281783", lead_id=<id>, start_date=<6mo ago>, end_date=<today>) to get page visit URLs.
 If "no match", record "Not found" in the Leadfeeder section.
 
 === RESEARCH INSTRUCTIONS ===
