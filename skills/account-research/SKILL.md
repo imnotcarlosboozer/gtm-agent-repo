@@ -151,7 +151,7 @@ Use Claude's built-in **WebSearch** and **WebFetch** tools for all queries. If `
 
    **M&A / corporate events** (look back to 2023 — these events affect outreach for years):
    ```
-   WebSearch('"{COMPANY_NAME}" (acquired OR "acquisition of" OR "acquired by" OR "merger with" OR "merged with" OR "went public" OR IPO OR SPAC OR "filed for bankruptcy" OR "chapter 11" OR "shutting down" OR "wind down" OR "ceasing operations") after:2016-01-01')
+   WebSearch('"{COMPANY_NAME}" (acquired OR "acquisition of" OR "acquired by" OR "merger with" OR "merged with" OR "went public" OR IPO OR SPAC OR "filed for bankruptcy" OR "chapter 11" OR "shutting down" OR "wind down" OR "ceasing operations")')
    ```
 
    From the general news search, extract by type: **funding rounds** (stage + amount + stated use of funds — "investing in data infrastructure" is direct signal); **leadership hires** (new VP Eng or Chief Data Officer = new buying motion); **layoffs/restructuring** (cost-cutting mode = harder sell); **product launches** (new AI/data product = more pipeline complexity); **partnerships** (cloud provider partnerships reveal stack). Tag each with source URL and date.
