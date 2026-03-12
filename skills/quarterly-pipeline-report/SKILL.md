@@ -16,7 +16,7 @@ Generate a comprehensive quarterly pipeline report including:
 The user has requested: {{args}}
 
 Parse the input to extract:
-1. **Rep name** (default to "Vishwa" if not provided)
+1. **Rep name** (default to "Rep" if not provided)
 2. **Quarter** (e.g., "Q1", "Q2", etc.)
 3. **Year** (default to 2026 if not specified)
 
@@ -33,7 +33,7 @@ Common patterns:
 - "quarterly pipeline for Q2"
 
 Default values:
-- Rep: "Vishwa"
+- Rep: "Rep"
 - Year: 2026
 
 ### Step 2: Run Pipeline Script
@@ -49,7 +49,7 @@ python3 ~/astronomer-claude-skills/scripts/quarterly_pipeline_context.py \
 
 The script will:
 1. Load cached Gong data from `~/claude-work/gong-cache/all_calls/calls.json`
-2. Auto-resolve rep name to email (e.g., "Thomas Messana" → "thomas.messana@astronomer.io")
+2. Auto-resolve rep name to email (e.g., "Rep Name" → "user@astronomer.io")
 3. Validate rep exists in Gong data and has opportunities in the quarter
 4. Filter opportunities by rep + quarter using fiscal calendar (Q1=Feb-Apr, Q2=May-Jul, Q3=Aug-Oct, Q4=Nov-Jan)
 5. Generate main pipeline report with opportunities table
@@ -125,7 +125,7 @@ Ask the user if they would like to:
 
 ## Error Handling
 
-**If rep name not found:** The script auto-constructs emails from names (e.g., "Thomas Messana" → "thomas.messana@astronomer.io") and validates against Gong data. If validation fails, it will show available reps in the system.
+**If rep name not found:** The script auto-constructs emails from names (e.g., "Rep Name" → "user@astronomer.io") and validates against Gong data. If validation fails, it will show available reps in the system.
 
 **If no opportunities found:** Script validates that rep exists and has opportunities in the quarter. Provides helpful error messages if:
 - No calls with this rep in the specified quarter
@@ -145,16 +145,16 @@ python3 ~/claude-work/gong_account_transcripts.py --sync
 
 **User:** "Generate Q1 2026 pipeline report for Thomas Messana"
 
-**Assistant:** [Runs script with --rep "Thomas Messana" --quarter "Q1 2026"]
+**Assistant:** [Runs script with --rep "Rep Name" --quarter "Q1 2026"]
 
-**Script auto-resolves:** "Thomas Messana" → "thomas.messana@astronomer.io"
+**Script auto-resolves:** "Rep Name" → "user@astronomer.io"
 
 **Output:** Shows formatted summary with pipeline metrics, location at `~/Pipeline Reports/Thomas Messana/Q1_2026/`, and account context stats.
 
 **User:** "Generate Q1 2026 pipeline report for Vishwa"
 
-**Assistant:** [Runs script with --rep "Vishwa" --quarter "Q1 2026"]
+**Assistant:** [Runs script with --rep "Rep" --quarter "Q1 2026"]
 
-**Script resolves:** "Vishwa" → "vishwa.srinivasan@astronomer.io" (via REP_EMAIL_MAP)
+**Script resolves:** "Rep" → "user@astronomer.io" (via REP_EMAIL_MAP)
 
 **Output:** Shows formatted summary at `~/Pipeline Reports/Vishwa Srinivasan/Q1_2026/`

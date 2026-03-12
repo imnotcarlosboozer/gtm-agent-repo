@@ -12,6 +12,7 @@ Answer questions about an account using internal data: Gong call transcripts and
 - **Gong transcripts**: Two-tier cache — global call index at `~/claude-work/gong-cache/all_calls/`, per-account transcripts/call details/emails at `~/claude-work/research-assistant/outputs/accounts/<account_name>/gong/`
 - **Gong emails**: Fetched automatically alongside transcripts. Cached per-account. Gracefully skipped if Gong email integration is not configured in the workspace.
 - **Account files**: `~/claude-work/research-assistant/outputs/accounts/<account_name>/` (report.md, interactions.md)
+- **QMD semantic index** (optional): If QMD is configured, Gong transcript markdown files and research reports are indexed for fast semantic retrieval. Falls back to script + file reads if QMD is unavailable.
 
 ## Input
 The user has provided: {{args}}
@@ -33,13 +34,27 @@ Read whatever exists. This gives you the full history so you don't repeat prior 
 
 ### 1. Fetch Gong Transcripts
 
-Run the script to pull all calls and transcripts for the account:
+**If QMD MCP tools are available** (`mcp__qmd__*`), try semantic retrieval first:
+
+1. Check if the account's transcripts are indexed:
+   ```
+   mcp__qmd__search(collection="gong", query="{ACCOUNT_NAME} {USER_QUESTION}", n=10)
+   ```
+2. If results are returned and cover the question well, use them directly — skip the script call below.
+3. If QMD returns no results or the account isn't indexed yet, fall through to the script.
+
+**If QMD is unavailable or returned no results**, run the script:
 
 ```bash
 python3 -u ~/claude-work/gong_account_transcripts.py "ACCOUNT_NAME" --stdout
 ```
 
-The script automatically checks the global call index cache and does an incremental update if needed.
+The script automatically checks the global call index cache and does an incremental update if needed. After it completes, generate the account's markdown file for future QMD indexing:
+
+```bash
+python3 ~/claude-work/gong_json_to_markdown.py --account "ACCOUNT_NAME"
+```
+(Skip silently if `gong_json_to_markdown.py` is not present.)
 
 If unsure of the exact account name, list available accounts:
 ```bash
@@ -83,6 +98,7 @@ The user will likely ask follow-up questions. The data is already in context, so
 - Use `--no-cache` to bypass all Gong caches if you need completely fresh data
 - Use `--refresh-cache` to force a full rebuild of the global call index
 - Use `--sync` to just update the global index without querying an account
+- QMD index is optional — skill works fully without it. To set it up, see the QMD section in the repo README
 
 ---
 

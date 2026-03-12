@@ -16,7 +16,7 @@ The user has provided: {{args}}
 - Batch force-rerun: `batch: /path/to/file.csv force` — re-researches all companies even if a complete report already exists (use after skill updates to refresh all reports)
 
 ## Constants
-- **Leadfeeder Account ID**: `281783`
+- **Leadfeeder Account ID**: `{YOUR_LEADFEEDER_ACCOUNT_ID}` — find this in Leadfeeder → Settings → Account
 - **Prompts Directory**: `~/claude-work/research-assistant/prompts/`
 - **Output Directory**: `~/claude-work/research-assistant/outputs/accounts/`
 
@@ -67,6 +67,22 @@ If either file is missing, stop immediately. Do not proceed — the report will 
 ```bash
 [ -n "$APOLLO_API_KEY" ] && echo "APOLLO: key set" || echo "APOLLO: no key — will skip Step 8"
 ```
+
+**d) Leadfeeder cache check**:
+```bash
+python3 -c "
+import json, os, time
+cache = os.path.expanduser('~/claude-work/leadfeeder-cache/leads.json')
+if os.path.exists(cache):
+    age_hours = (time.time() - os.path.getmtime(cache)) / 3600
+    if age_hours < 168:  # 7-day TTL
+        data = json.load(open(cache))
+        print(f'LEADFEEDER_CACHE_HIT: {len(data)} leads, {age_hours:.1f}h old ({age_hours/24:.1f} days)')
+        exit(0)
+print('LEADFEEDER_CACHE_MISS')
+"
+```
+Store result as `LEADFEEDER_CACHE_STATUS`. If `CACHE_HIT`, load `~/claude-work/leadfeeder-cache/leads.json` into memory as `LEADFEEDER_LEADS` — Agent 2 will use these directly and skip all pagination. If `CACHE_MISS`, Agent 2 will paginate and populate the cache after.
 
 ### Step 3: Collect Data (2 Parallel Agents)
 
@@ -210,75 +226,97 @@ Use Claude's built-in **WebSearch** and **WebFetch** tools for all queries. If `
 
 #### Agent 2: Internal Signals (Leadfeeder + Common Room + Gong)
 
-Run all three lookups. Skip Gong if `GONG_HAS_CALLS=false`.
+Launch **Leadfeeder, Common Room, and Gong simultaneously** — three parallel tool calls. Skip Gong if `GONG_HAS_CALLS=false`.
 
-**Leadfeeder** — paginate up to 5 pages to find a match:
+---
+
+**Leadfeeder** — use cache if available, otherwise paginate:
+
+If `LEADFEEDER_CACHE_HIT` from pre-flight: search `LEADFEEDER_LEADS` in memory for a record where `name` or `website` matches `{COMPANY_NAME}` or `{DOMAIN}`. If found, set `MATCHED_LEAD_ID` and call:
 ```
-mcp__leadfeeder__get_leads(account_id="281783", start_date=[6mo ago], end_date=[today], page_size=100, page=1)
+mcp__leadfeeder__get_lead_visits(account_id="{YOUR_LEADFEEDER_ACCOUNT_ID}", lead_id=MATCHED_LEAD_ID, start_date=[6mo ago], end_date=[today])
 ```
-Match by name or domain against `DOMAIN`. If found:
+
+If `LEADFEEDER_CACHE_MISS`: paginate up to 5 pages to find a match:
 ```
-mcp__leadfeeder__get_lead(account_id="281783", lead_id=MATCHED_LEAD_ID)
-mcp__leadfeeder__get_lead_visits(account_id="281783", lead_id=MATCHED_LEAD_ID, start_date=[6mo ago], end_date=[today])
+mcp__leadfeeder__get_leads(account_id="{YOUR_LEADFEEDER_ACCOUNT_ID}", start_date=[6mo ago], end_date=[today], page_size=100, page=1)
 ```
+Match by name or domain. If found, call `get_lead` and `get_lead_visits`. Then save all fetched leads to cache so future runs are instant:
+```bash
+mkdir -p ~/claude-work/leadfeeder-cache/
+python3 -c "
+import json, os
+leads = [...]  # list of {id, name, website, visit_count, last_visited_at} dicts collected above
+with open(os.path.expanduser('~/claude-work/leadfeeder-cache/leads.json'), 'w') as f:
+    json.dump(leads, f)
+print(f'Cached {len(leads)} leads')
+"
+```
+
 Keep only: `lead_id`, `name`, `website`, `visit_count`, `last_visited_at`, and per-visit `url`/`date`/`duration`.
 
-**Common Room** (if connected) — run in parallel with Leadfeeder:
+---
 
-1. Org lookup:
-   ```
-   mcp__commonroom__commonroom_list_objects(
-     objectType="Organization",
-     filter={type:"and", clauses:[{type:"stringFilter", field:"companyWebsite", params:{op:"like", value:"{DOMAIN}"}}]},
-     properties=["about","employees","location","subIndustry","revenueRangeMin","revenueRangeMax","leadScores","topContacts","contactsCount","tags","researchResults"],
-     limit=1
-   )
-   ```
+**Common Room** (if connected) — run in parallel with Leadfeeder and Gong:
 
-2. Contacts (if org found):
-   ```
-   mcp__commonroom__commonroom_list_objects(
-     objectType="Contact",
-     filter={type:"and", clauses:[{type:"stringFilter", field:"companyWebsite", params:{op:"like", value:"{DOMAIN}"}}]},
-     properties=["primaryEmail","title","fullName","recentActivities","recentWebPages","recentWebVisitsNumber","leadScores","profiles","sparkSummary"],
-     sort="latest_activity", direction="desc", limit=10
-   )
-   ```
+**Step 1 — Org lookup** (required first, everything else depends on this):
+```
+mcp__commonroom__commonroom_list_objects(
+  objectType="Organization",
+  filter={type:"and", clauses:[{type:"stringFilter", field:"companyWebsite", params:{op:"like", value:"{DOMAIN}"}}]},
+  properties=["about","employees","location","subIndustry","revenueRangeMin","revenueRangeMax","leadScores","topContacts","contactsCount","tags","researchResults"],
+  limit=1
+)
+```
 
-   For each contact, assign a value tier based on title:
-   - **HIGH** (decision-makers/champions): VP/Director of Engineering, Head/Director of Data, Data Platform Engineer/Manager, Data Architect, ML Platform, Staff/Principal Data Engineer
-   - **MED** (users, not buyers): Data Engineer, Analytics Engineer, Data Scientist, Data Analyst
-   - **LOW** (not relevant for outreach): Marketing, Sales, Finance, HR, other non-technical roles
+**Step 2 — After org lookup resolves, fire all three simultaneously in parallel:**
 
-   Flag any HIGH-tier contacts visiting Astronomer pages — that's an active buying signal.
+2a. **Contacts**:
+```
+mcp__commonroom__commonroom_list_objects(
+  objectType="Contact",
+  filter={type:"and", clauses:[{type:"stringFilter", field:"companyWebsite", params:{op:"like", value:"{DOMAIN}"}}]},
+  properties=["primaryEmail","title","fullName","recentActivities","recentWebPages","recentWebVisitsNumber","leadScores","profiles","sparkSummary"],
+  sort="latest_activity", direction="desc", limit=10
+)
+```
 
-3. Recent activity (if org found, use orgId):
-   ```
-   mcp__commonroom__commonroom_list_objects(
-     objectType="Activity",
-     filter={type:"and", clauses:[
-       {type:"stringFilter", field:"orgId", params:{op:"eq", value:"{ORG_ID}"}},
-       {type:"dateRangeFilter", field:"activityTime", params:{op:"in", value:"P90D", min:null, max:null}}
-     ]},
-     properties=["content","url","activityTime","providerName"],
-     sort="activityTime", direction="desc", limit=20
-   )
-   ```
+2b. **Recent activity** (only if orgId found):
+```
+mcp__commonroom__commonroom_list_objects(
+  objectType="Activity",
+  filter={type:"and", clauses:[
+    {type:"stringFilter", field:"orgId", params:{op:"eq", value:"{ORG_ID}"}},
+    {type:"dateRangeFilter", field:"activityTime", params:{op:"in", value:"P90D", min:null, max:null}}
+  ]},
+  properties=["content","url","activityTime","providerName"],
+  sort="activityTime", direction="desc", limit=20
+)
+```
 
-4. Website visits (if contacts found):
-   ```
-   mcp__commonroom__commonroom_list_objects(
-     objectType="WebsiteVisit",
-     filter={type:"and", clauses:[
-       {type:"and", target:"Contact", objectConfigId:null, targetAssocPaths:null,
-        clauses:[{type:"stringFilter", field:"companyWebsite", params:{op:"like", value:"{DOMAIN}"}}]},
-       {type:"dateRangeFilter", field:"visitTime", params:{op:"in", value:"P90D", min:null, max:null}}
-     ]},
-     properties=["url"], limit=20
-   )
-   ```
+2c. **Website visits**:
+```
+mcp__commonroom__commonroom_list_objects(
+  objectType="WebsiteVisit",
+  filter={type:"and", clauses:[
+    {type:"and", target:"Contact", objectConfigId:null, targetAssocPaths:null,
+     clauses:[{type:"stringFilter", field:"companyWebsite", params:{op:"like", value:"{DOMAIN}"}}]},
+    {type:"dateRangeFilter", field:"visitTime", params:{op:"in", value:"P90D", min:null, max:null}}
+  ]},
+  properties=["url"], limit=20
+)
+```
 
-**Gong** (only if `GONG_HAS_CALLS=true` or index was unavailable):
+For each contact from 2a, assign a value tier:
+- **HIGH** (decision-makers/champions): VP/Director of Engineering, Head/Director of Data, Data Platform Engineer/Manager, Data Architect, ML Platform, Staff/Principal Data Engineer
+- **MED** (users, not buyers): Data Engineer, Analytics Engineer, Data Scientist, Data Analyst
+- **LOW** (not relevant for outreach): Marketing, Sales, Finance, HR, other non-technical roles
+
+Flag any HIGH-tier contacts visiting Astronomer pages — that's an active buying signal.
+
+---
+
+**Gong** (only if `GONG_HAS_CALLS=true` or index was unavailable) — run in parallel with Leadfeeder and Common Room:
 ```bash
 python3 -u ~/claude-work/gong_account_transcripts.py "{COMPANY_NAME}" --stdout
 ```
@@ -519,7 +557,7 @@ Overwrite: `~/claude-work/research-assistant/outputs/accounts/{company_slug}/rep
 
 Skip entirely if no `APOLLO_API_KEY` (from pre-flight). Log "Apollo sync skipped — no API key."
 
-- **Field ID**: `6998b33edacda9000deb48ca`
+- **Field ID**: `{YOUR_APOLLO_FIELD_ID}`
 - Use `typed_custom_fields` (keyed by field ID), NOT `custom_fields` (silently ignored)
 
 1. Find account — search by name, confirm by domain:
@@ -551,7 +589,7 @@ Skip entirely if no `APOLLO_API_KEY` (from pre-flight). Log "Apollo sync skipped
 
    RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X PUT "https://api.apollo.io/v1/accounts/{ACCOUNT_ID}" \
      -H "Content-Type: application/json" \
-     -d "{\"api_key\": \"$APOLLO_API_KEY\", \"typed_custom_fields\": {\"6998b33edacda9000deb48ca\": $(echo "$APOLLO_REPORT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' )}}")
+     -d "{\"api_key\": \"$APOLLO_API_KEY\", \"typed_custom_fields\": {\"{YOUR_APOLLO_FIELD_ID}\": $(echo "$APOLLO_REPORT" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' )}}")
    HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
    if [ "$HTTP_STATUS" = "200" ]; then
      echo "Apollo: write succeeded"
@@ -581,9 +619,9 @@ import json, os, time
 cache = os.path.expanduser('~/claude-work/leadfeeder-cache/leads.json')
 if os.path.exists(cache):
     age_hours = (time.time() - os.path.getmtime(cache)) / 3600
-    if age_hours < 24:
+    if age_hours < 168:  # 7-day TTL
         data = json.load(open(cache))
-        print(f'LEADFEEDER_CACHE_HIT: {len(data)} leads, {age_hours:.1f}h old')
+        print(f'LEADFEEDER_CACHE_HIT: {len(data)} leads, {age_hours:.1f}h old ({age_hours/24:.1f} days)')
         exit(0)
 print('LEADFEEDER_CACHE_MISS')
 "
@@ -593,7 +631,7 @@ If `LEADFEEDER_CACHE_HIT`: load leads from `~/claude-work/leadfeeder-cache/leads
 
 If `LEADFEEDER_CACHE_MISS`: pull all leads via API (up to 20 pages of 100):
 ```
-mcp__leadfeeder__get_leads(account_id="281783", start_date=[6mo ago], end_date=[today], page_size=100, page=N)
+mcp__leadfeeder__get_leads(account_id="{YOUR_LEADFEEDER_ACCOUNT_ID}", start_date=[6mo ago], end_date=[today], page_size=100, page=N)
 ```
 Stop when a page returns <100 results. Store only: `id`, `name`, `website`, `visit_count`, `last_visited_at`.
 
@@ -674,7 +712,8 @@ The subagent has no access to this skill file. The task string must embed everyt
 ```
 Agent(
   subagent_type="general-purpose",
-  task="""
+  description="Research {COMPANY_NAME}",
+  prompt="""
 You are researching {COMPANY_NAME} ({DOMAIN}) for Astronomer sales fitness.
 Save the final report to: ~/claude-work/research-assistant/outputs/accounts/{COMPANY_SLUG}/report.md
 When finished, respond with only: "{COMPANY_NAME} complete" or "{COMPANY_NAME} error: [one-line reason]"
@@ -682,7 +721,7 @@ Do NOT return the report content in your response.
 
 === LEADFEEDER DATA (pre-fetched) ===
 {LEADFEEDER_MATCH}
-If a lead_id is provided above, call mcp__leadfeeder__get_lead_visits(account_id="281783", lead_id=<id>, start_date=<6mo ago>, end_date=<today>) to get page visit URLs.
+If a lead_id is provided above, call mcp__leadfeeder__get_lead_visits(account_id="{YOUR_LEADFEEDER_ACCOUNT_ID}", lead_id=<id>, start_date=<6mo ago>, end_date=<today>) to get page visit URLs.
 If "no match", record "Not found" in the Leadfeeder section.
 
 === RESEARCH INSTRUCTIONS ===

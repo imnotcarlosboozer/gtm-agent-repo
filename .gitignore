@@ -1,0 +1,40 @@
+# Gong cache — contains customer call data, never commit
+gong-cache/
+gong_cache/
+**/gong-cache/
+**/gong_cache/
+
+# Leadfeeder cache — contains customer visit data
+leadfeeder-cache/
+**/leadfeeder-cache/
+
+# Research outputs — contains customer intelligence reports
+research-assistant/outputs/
+**/outputs/accounts/
+
+# Generated markdown files (rebuilt from JSON cache locally)
+**/transcripts.md
+
+# Batch run logs and summaries (contain customer names)
+batch_run_log.txt
+batch_summary.csv
+failed_rerun.csv
+
+# Local Gong transcript files
+gong_*.json
+gong_*.md
+
+# Env / secrets
+.env
+*.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS
+.DS_Store
