@@ -79,7 +79,7 @@ Weekly call coaching report for an AE. Pulls every call they appeared on (not ju
 /weekly-gong-review                              # current week
 /weekly-gong-review week:2026-W09               # specific week
 /weekly-gong-review rep:"Alec Dolton"           # different rep
-/weekly-gong-review rep:alec.dolton@astronomer.io
+/weekly-gong-review rep:ae@yourcompany.com
 ```
 
 **Requires**: Claude Code + Gong API credentials (see [Setup](#setup-weekly-gong-review))
@@ -439,8 +439,8 @@ Edit `~/Scripts/quarterly_pipeline_context.py` and add entries to `REP_EMAIL_MAP
 
 ```python
 REP_EMAIL_MAP = {
-    "vishwa": "vishwa.srinivasan@astronomer.io",
-    "alec": "alec.dolton@astronomer.io",
+    "vishwa": "rep@yourcompany.com",
+    "alec": "ae@yourcompany.com",
     # Add more reps here
 }
 ```
@@ -468,7 +468,7 @@ Output location: `~/Account Context/Q{N}_{YEAR}_Pipeline/`
 <details>
 <summary>Apollo integration details</summary>
 
-- Reports write to the `Account_Research` custom field (field ID: `6998b33edacda9000deb48ca`) using `typed_custom_fields` — the name-keyed `custom_fields` format silently ignores writes
+- Reports write to the `Account_Research` custom field (field ID: `{YOUR_APOLLO_FIELD_ID}`) using `typed_custom_fields` — the name-keyed `custom_fields` format silently ignores writes
 - Account lookup uses name search + domain validation to avoid writing to the wrong record
 
 </details>
