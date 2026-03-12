@@ -79,7 +79,7 @@ Weekly call coaching report for an AE. Pulls every call they appeared on (not ju
 /weekly-gong-review                              # current week
 /weekly-gong-review week:2026-W09               # specific week
 /weekly-gong-review rep:"Alec Dolton"           # different rep
-/weekly-gong-review rep:ae@astronomer.io
+/weekly-gong-review rep:rep@astronomer.io
 ```
 
 **Requires**: Claude Code + Gong API credentials (see [Setup](#setup-weekly-gong-review))
@@ -440,7 +440,7 @@ Edit `~/Scripts/quarterly_pipeline_context.py` and add entries to `REP_EMAIL_MAP
 ```python
 REP_EMAIL_MAP = {
     "vishwa": "rep@astronomer.io",
-    "alec": "ae@astronomer.io",
+    "alec": "rep@astronomer.io",
     # Add more reps here
 }
 ```

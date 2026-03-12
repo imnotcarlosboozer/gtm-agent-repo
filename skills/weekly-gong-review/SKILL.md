@@ -7,7 +7,7 @@ The user has provided: {{args}}
 
 - No args: review the current ISO week for the configured rep
 - `week:2026-W09` — review a specific ISO week
-- `rep:"Your Name"` or `rep:ae@astronomer.io` — override config (for reviewing a different rep)
+- `rep:"Your Name"` or `rep:rep@astronomer.io` — override config (for reviewing a different rep)
 
 ## Constants
 - **Gong Base URL**: `https://api.gong.io/v2`
