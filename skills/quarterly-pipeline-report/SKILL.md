@@ -49,7 +49,7 @@ python3 ~/astronomer-claude-skills/scripts/quarterly_pipeline_context.py \
 
 The script will:
 1. Load cached Gong data from `~/claude-work/gong-cache/all_calls/calls.json`
-2. Auto-resolve rep name to email (e.g., "Rep Name" → "rep@yourcompany.com")
+2. Auto-resolve rep name to email (e.g., "Rep Name" → "rep@astronomer.io")
 3. Validate rep exists in Gong data and has opportunities in the quarter
 4. Filter opportunities by rep + quarter using fiscal calendar (Q1=Feb-Apr, Q2=May-Jul, Q3=Aug-Oct, Q4=Nov-Jan)
 5. Generate main pipeline report with opportunities table
@@ -125,7 +125,7 @@ Ask the user if they would like to:
 
 ## Error Handling
 
-**If rep name not found:** The script auto-constructs emails from names (e.g., "Rep Name" → "rep@yourcompany.com") and validates against Gong data. If validation fails, it will show available reps in the system.
+**If rep name not found:** The script auto-constructs emails from names (e.g., "Rep Name" → "rep@astronomer.io") and validates against Gong data. If validation fails, it will show available reps in the system.
 
 **If no opportunities found:** Script validates that rep exists and has opportunities in the quarter. Provides helpful error messages if:
 - No calls with this rep in the specified quarter
@@ -147,7 +147,7 @@ python3 ~/claude-work/gong_account_transcripts.py --sync
 
 **Assistant:** [Runs script with --rep "Rep Name" --quarter "Q1 2026"]
 
-**Script auto-resolves:** "Rep Name" → "rep@yourcompany.com"
+**Script auto-resolves:** "Rep Name" → "rep@astronomer.io"
 
 **Output:** Shows formatted summary with pipeline metrics, location at `~/Pipeline Reports/Thomas Messana/Q1_2026/`, and account context stats.
 
@@ -155,6 +155,6 @@ python3 ~/claude-work/gong_account_transcripts.py --sync
 
 **Assistant:** [Runs script with --rep "Rep" --quarter "Q1 2026"]
 
-**Script resolves:** "Rep" → "rep@yourcompany.com" (via REP_EMAIL_MAP)
+**Script resolves:** "Rep" → "rep@astronomer.io" (via REP_EMAIL_MAP)
 
 **Output:** Shows formatted summary at `~/Pipeline Reports/Vishwa Srinivasan/Q1_2026/`

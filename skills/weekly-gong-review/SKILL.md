@@ -7,7 +7,7 @@ The user has provided: {{args}}
 
 - No args: review the current ISO week for the configured rep
 - `week:2026-W09` — review a specific ISO week
-- `rep:"Your Name"` or `rep:ae@yourcompany.com` — override config (for reviewing a different rep)
+- `rep:"Your Name"` or `rep:ae@astronomer.io` — override config (for reviewing a different rep)
 
 ## Constants
 - **Gong Base URL**: `https://api.gong.io/v2`
@@ -52,7 +52,7 @@ print(sunday.strftime('%Y-%m-%dT23:59:59Z'))
 ### 2a. Load config
 Read `~/claude-work/rep-coaching/config.md`. Expected format:
 ```
-Email: rep.name@yourcompany.com
+Email: rep.name@astronomer.io
 UserId: <gong_user_id>
 ```
 
@@ -107,7 +107,7 @@ Paginate using `records.cursor` until all pages are fetched (~3 pages for this w
 **Filter — all steps done here, no transcript needed yet:**
 1. Keep only calls where `REP_USER_ID` appears in `parties[].userId`
 2. Drop calls with `metaData.duration < 900` (< 15 minutes)
-3. Drop calls where every party email ends in `@yourcompany.com` (internal-only)
+3. Drop calls where every party email ends in `@astronomer.io` (internal-only)
 4. **Talk ratio pre-filter**: use `interaction.speakers[].talkTime` to compute the rep's share of total talk time. Drop calls where rep's share < 10% (observer). The rep's speakerId maps to their `parties` entry via `userId`.
 
 Store the **qualifying** call list only: `[{id, title, url, date, duration_seconds, parties, talk_ratio}]`
@@ -365,7 +365,7 @@ Output the full report. No preamble — start directly with the report content.
 - Cross-call patterns only if seen in 2+ calls. Don't manufacture patterns from a single instance.
 - Keep per-call sections tight — max 2 positives + 2 coaching points per call. Quality over quantity.
 - Overall score = average of scored dimensions (exclude N/A dimensions from average).
-- Internal calls (all @yourcompany.com participants) are excluded entirely — do not reference them in the report.
+- Internal calls (all @astronomer.io participants) are excluded entirely — do not reference them in the report.
 
 ---
 
