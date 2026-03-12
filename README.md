@@ -2,21 +2,53 @@
 
 Claude Code skills for the Astronomer sales team. Research accounts, review call history, and get weekly coaching reports — all from within Claude Code.
 
+## Getting started
+
+Clone the repo, open Claude Code from the repo root, and run:
+
+```
+/setup
+```
+
+Claude will detect what is already configured, fetch account IDs and field IDs automatically from your APIs, and only ask you for credentials it cannot derive itself. You will need: Gong API keys, Apollo API key, and optionally a Leadfeeder API token.
+
 ---
 
 ## Contents
 
-| Skill | What it does | Setup |
-|-------|-------------|-------|
-| [`account-research`](#account-research) | Research any company for Astronomer fit — scored AE brief, tech stack, hiring signals, buying intent, and more | [Setup](#setup-account-research) |
-| [`account-question`](#account-question) | Ask anything about an account using Gong transcripts and saved research | [Setup](#setup-account-question) |
-| [`demo-prep`](#demo-prep) | Generate a ready-to-share SE demo prep brief from Gong call transcripts — attendees, current state, tech stack, use cases, etc. | [Setup](#setup-demo-prep) |
-| [`weekly-gong-review`](#weekly-gong-review) | Weekly call coaching report — scorecard, highlights, patterns, deep links to exact timestamps | [Setup](#setup-weekly-gong-review) |
-| [`quarterly-pipeline-report`](#quarterly-pipeline-report) | Generate quarterly pipeline report with Gong transcripts and research for each account | [Setup](#setup-quarterly-pipeline-report) |
+| Skill | What it does |
+|-------|-------------|
+| [`setup`](#setup-skill) | First-time setup — installs all skills, configures credentials, auto-derives account IDs |
+| [`account-research`](#account-research) | Research any company for Astronomer fit — scored AE brief, tech stack, hiring signals, buying intent, and more |
+| [`account-question`](#account-question) | Ask anything about an account using Gong transcripts and saved research |
+| [`demo-prep`](#demo-prep) | Generate a ready-to-share SE demo prep brief from Gong call transcripts — attendees, current state, tech stack, use cases, etc. |
+| [`weekly-gong-review`](#weekly-gong-review) | Weekly call coaching report — scorecard, highlights, patterns, deep links to exact timestamps |
+| [`quarterly-pipeline-report`](#quarterly-pipeline-report) | Generate quarterly pipeline report with Gong transcripts and research for each account |
+
+> Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md) for the sanitization checklist, placeholder reference, and PR standards.
 
 ---
 
 ## Skills
+
+### `setup`
+
+First-time setup for all skills. Run this once when you clone the repo on a new machine.
+
+**Run it**: open Claude Code from the repo root and type `/setup`
+
+Claude will:
+- Check which credentials and MCP servers are already configured
+- Ask only for credentials it cannot derive (Gong API keys, Apollo API key, Leadfeeder token)
+- Auto-fetch your Leadfeeder account ID and Apollo field ID from the APIs — no manual lookup
+- Install all skill files, scripts, and prompt templates
+- Patch installed skills with your real account IDs (repo copies keep placeholders)
+- Sync the Gong call cache
+- Print a status summary showing what is working
+
+**Requires**: Claude Code + this repo cloned locally. Everything else is set up for you.
+
+---
 
 ### `account-research`
 Research any company for Astronomer fit. Pulls data from Exa, Leadfeeder, Common Room, and Gong, then generates a scored AE brief and syncs it to Apollo.
