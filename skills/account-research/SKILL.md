@@ -75,9 +75,9 @@ import json, os, time
 cache = os.path.expanduser('~/claude-work/leadfeeder-cache/leads.json')
 if os.path.exists(cache):
     age_hours = (time.time() - os.path.getmtime(cache)) / 3600
-    if age_hours < 24:
+    if age_hours < 168:  # 7-day TTL
         data = json.load(open(cache))
-        print(f'LEADFEEDER_CACHE_HIT: {len(data)} leads, {age_hours:.1f}h old')
+        print(f'LEADFEEDER_CACHE_HIT: {len(data)} leads, {age_hours:.1f}h old ({age_hours/24:.1f} days)')
         exit(0)
 print('LEADFEEDER_CACHE_MISS')
 "
@@ -619,9 +619,9 @@ import json, os, time
 cache = os.path.expanduser('~/claude-work/leadfeeder-cache/leads.json')
 if os.path.exists(cache):
     age_hours = (time.time() - os.path.getmtime(cache)) / 3600
-    if age_hours < 24:
+    if age_hours < 168:  # 7-day TTL
         data = json.load(open(cache))
-        print(f'LEADFEEDER_CACHE_HIT: {len(data)} leads, {age_hours:.1f}h old')
+        print(f'LEADFEEDER_CACHE_HIT: {len(data)} leads, {age_hours:.1f}h old ({age_hours/24:.1f} days)')
         exit(0)
 print('LEADFEEDER_CACHE_MISS')
 "
