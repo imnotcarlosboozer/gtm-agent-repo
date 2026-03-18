@@ -584,16 +584,44 @@ Skip entirely if no `APOLLO_API_KEY` (from pre-flight). Log "Apollo sync skipped
 
 - **Field ID**: `6998b33edacda9000deb48ca`
 - Use `typed_custom_fields` (keyed by field ID), NOT `custom_fields` (silently ignored)
+- **Input override**: If the user provided a direct Apollo URL (e.g. `https://app.apollo.io/#/accounts/{ID}`), extract the account ID and skip account lookup entirely — go straight to step 3.
 
-1. Find account — search by name, confirm by domain:
+1. **Get current Apollo user ID** (needed for ownership filtering):
+   ```bash
+   APOLLO_USER_ID=$(curl -s "https://api.apollo.io/v1/users/me?api_key=$APOLLO_API_KEY" | \
+     python3 -c "import json,sys; u=json.load(sys.stdin).get('user',{}); print(u.get('id','unknown'))")
+   ```
+
+2. **Find and select the correct account** — search by name, then apply ownership + domain filters:
    ```bash
    curl -s -X POST "https://api.apollo.io/v1/accounts/search" \
      -H "Content-Type: application/json" \
-     -d "{\"api_key\": \"$APOLLO_API_KEY\", \"q_organization_name\": \"{COMPANY_NAME}\", \"per_page\": 10}"
+     -d "{\"api_key\": \"$APOLLO_API_KEY\", \"q_organization_name\": \"{COMPANY_NAME}\", \"per_page\": 25}"
    ```
-   Find the result where `account.domain == "{DOMAIN}"`. If none match, skip and log: "Apollo: No account found matching domain {DOMAIN}."
 
-2. Write report and verify success:
+   Apply this selection logic in order:
+
+   **a) Filter by domain**: Keep only results where `account.domain == "{DOMAIN}"`. If no domain matches, skip and log: "Apollo: No account found matching domain {DOMAIN}."
+
+   **b) If exactly one domain match**: Use it. Log the account name and owner for transparency.
+
+   **c) If multiple domain matches**: Filter further by ownership — keep only accounts where `account.owner_id == APOLLO_USER_ID`. Then:
+   - **One owned match**: Use it. Log: "Apollo: Multiple accounts found for {DOMAIN} — selected account owned by current user: {NAME} ({ACCOUNT_ID})"
+   - **No owned matches**: Do NOT write. Log a warning and skip:
+     ```
+     ⚠️  Apollo: {N} accounts found for {DOMAIN} but none are owned by the current user.
+     Accounts found:
+       - {NAME} (ID: {ID}) — owner: {OWNER_NAME}
+       - {NAME} (ID: {ID}) — owner: {OWNER_NAME}
+     To write to one of these, re-run with the direct Apollo URL appended to the input:
+       /account-research {COMPANY_NAME}, {DOMAIN}, https://app.apollo.io/#/accounts/{ID}
+     Apollo sync skipped.
+     ```
+   - **Multiple owned matches** (rare — true duplicates under same owner): Do NOT write. Log a warning listing each, and ask user to specify via URL override.
+
+   > **Owner field note**: Apollo's account search response includes `owner_id` (the Apollo user ID of the account owner) as a standard field. Compare this against `APOLLO_USER_ID` from step 1. Do not rely on custom fields for ownership — use the standard `owner_id` field.
+
+3. **Write report and verify success**:
    ```bash
    # Truncate for Apollo field limit (~65,000 chars). Drops Full Transcripts first,
    # then hard-truncates if still over. Local report.md is never modified.
