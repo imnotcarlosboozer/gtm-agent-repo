@@ -495,6 +495,54 @@ Output location: `~/Account Context/Q{N}_{YEAR}_Pipeline/`
 
 ---
 
+## Troubleshooting
+
+### MCP connections failing — Cloudflare Gateway blocking SSL
+
+Astronomer routes traffic through Cloudflare Zero Trust (Gateway), which performs TLS inspection by acting as a trusted man-in-the-middle. Node.js — which runs all HTTP-based MCP servers (Apollo, Gong, Common Room, etc.) — doesn't trust the Cloudflare Gateway CA by default, so connections fail with certificate errors.
+
+**Symptom**: MCP tools return SSL/certificate errors, or `/mcp` shows authentication failures for services that should be connected.
+
+**Fix**: Download the Cloudflare Gateway CA cert and tell Node.js to trust it via `NODE_EXTRA_CA_CERTS`.
+
+**Step 1 — Get the certificate**
+
+Download the Cloudflare Gateway CA cert from the [Cloudflare Zero Trust dashboard](https://one.dash.cloudflare.com):
+
+```
+Settings → Resources → Download Cloudflare Certificate
+```
+
+Save it to a stable path, e.g.:
+
+```bash
+~/.claude/cloudflare-gateway-ca.pem
+```
+
+If you don't have dashboard access, ask IT to send you the Gateway CA `.pem` file.
+
+**Step 2 — Tell Node.js to trust it**
+
+Add `NODE_EXTRA_CA_CERTS` to the `env` block in `~/.claude/settings.json`:
+
+```json
+{
+  "env": {
+    "NODE_EXTRA_CA_CERTS": "/Users/your-username/.claude/cloudflare-gateway-ca.pem"
+  }
+}
+```
+
+Replace `your-username` with your macOS username. If `settings.json` already has an `env` block, just add the key to it.
+
+**Step 3 — Restart Claude Code**
+
+Quit and reopen Claude Code. Run `/mcp` to verify connections are restored.
+
+> **Why this works**: `NODE_EXTRA_CA_CERTS` appends your cert to Node's trusted CA list without replacing the built-in ones. All MCP servers pick it up automatically since they inherit Claude Code's environment.
+
+---
+
 ## Technical Notes
 
 <details>
