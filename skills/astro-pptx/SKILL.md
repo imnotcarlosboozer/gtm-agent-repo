@@ -93,12 +93,21 @@ Never produce a plain white slide with just text. Use at least one of:
 - Icon placeholder shapes in brand colors
 
 ### Layout variety
-Don't repeat the same layout on consecutive slides. Rotate through:
-- Full dark/light color background with centered title
-- Two-column (text left, visual/icon right)
-- Large eyebrow + big headline + body text
-- Icon grid (3–4 items with label + description)
-- Stat callout (big number 60–72pt, small label below)
+Don't repeat the same layout on consecutive slides. `references/brand.md` has 8 named layouts
+with exact specs — use them as your primary vocabulary. Quick reference:
+
+| Layout | Best for |
+|--------|----------|
+| Gold top stripe | Almost every slide — thin brand header |
+| Big statement (full purple bg) | Thesis, mission, bold section openers |
+| Split: dark col left + card grid right | System overviews, feature breakdowns |
+| Before / After split | Problem → solution, old vs. new |
+| Giant stat left + content right | Key metrics, proof points |
+| Dark callout on light bg | Examples, output callouts |
+| 2×3 roadmap grid | What's next, feature roadmaps |
+| Use case (numbered) | Use case walkthroughs, process flows |
+
+A real example deck lives at `assets/all-hands-example.pptx` — read it for design inspiration.
 
 ---
 

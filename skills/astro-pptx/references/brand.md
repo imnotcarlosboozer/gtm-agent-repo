@@ -106,10 +106,65 @@ unless the user explicitly requests it.
 
 ---
 
-## Design Elements
+## Proven Slide Layouts (from real Astronomer decks)
 
-These are the visual motifs from the Astronomer brand. Use them as decorative elements,
-not as literal images (since we're building programmatically with python-pptx shapes).
+These patterns appear in actual Astronomer presentations. Use them as your primary layout
+vocabulary — they're battle-tested and on-brand.
+
+A real example deck is bundled at `assets/all-hands-example.pptx`. Read it with:
+```bash
+python3 -m markitdown assets/all-hands-example.pptx
+```
+
+### 1. Gold top stripe
+A thin gold bar (`#FFB32D`, ~0.08" tall) spanning full slide width at the very top.
+Appears on nearly every slide as a consistent brand header element.
+```python
+box(slide, 0, 0, 13.33, 0.08, fill=GOLD)
+```
+
+### 2. Big statement slide (full accent color)
+Entire background is Purple 60 (`#872DED`). White League Gothic text fills ~80% of the slide height.
+Right ~25% of slide is a slightly darker purple column for visual weight.
+Use for thesis statements, mission slides, and bold section openers.
+
+### 3. Split: dark column left + content grid right
+Left ~35% of slide: NM80 background with huge League Gothic text (e.g. "THE\nSYSTEM").
+Right ~65%: NM10/cream background with a 2×2 or 2×3 card grid.
+Each card has a purple left border strip (~0.05" wide) and Roboto Bold heading.
+Bottom of right panel: NM80 callout box with Gold eyebrow label + body text.
+
+### 4. Before / After split
+Two equal columns on a dark background.
+- Left column: NM70 header band + muted content (the "before" state)
+- Right column: Purple 60 header band + positive content (the "after" state)
+Both headers use Roboto Bold in ALL CAPS, white text.
+Content uses bullet-style Roboto body text.
+
+### 5. Giant stat left + vertical rule + content right
+Left ~30% of slide: one enormous League Gothic number in Gold (80–100pt).
+Small Roboto label below the number.
+Purple vertical rule (thin, full content height) divides left from right.
+Right ~65%: Roboto Bold subheadings with indented bullet points below each.
+
+### 6. Dark callout card on light background
+On a light (NM10) slide, a full NM80 card occupies the right ~50%.
+Gold eyebrow label at top of card. Content in NM10/white body text.
+Purple border on the card's left or all sides.
+Use for "example" or "output" callouts alongside a how-it-works list on the left.
+
+### 7. 2×3 roadmap grid (dark bg)
+Dark NM80 background with oversized League Gothic headline at top.
+Six equal cards below in a 2-column grid.
+Each card: NM70 fill, purple left border (~0.05" wide), Roboto Bold heading, small body text.
+Last card can say "And more to come!" to leave the grid open.
+
+### 8. Use case layout (dark bg, numbered)
+Gold top stripe. Gold ALL CAPS eyebrow (e.g. "USE CASE 01").
+Large bold League Gothic headline across full width.
+Content area splits into left (process/how-it-works) and right (example/evidence).
+
+## Design Elements (decorative motifs)
 
 - **Space Math / Grid**: Use evenly-spaced lines or dot grids as subtle background texture
 - **Orbits**: Arc and circle shapes in New Moon colors — great for title slide backgrounds
