@@ -24,6 +24,7 @@ Claude will detect what is already configured, fetch account IDs and field IDs a
 | [`demo-prep`](#demo-prep) | Generate a ready-to-share SE demo prep brief from Gong call transcripts — attendees, current state, tech stack, use cases, etc. |
 | [`weekly-gong-review`](#weekly-gong-review) | Weekly call coaching report — scorecard, highlights, patterns, deep links to exact timestamps |
 | [`quarterly-pipeline-report`](#quarterly-pipeline-report) | Generate quarterly pipeline report with Gong transcripts and research for each account |
+| [`astro-pptx`](#astro-pptx) | Create branded Astronomer PowerPoint presentations following the 2026 brand guidelines |
 
 > Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md) for the sanitization checklist, placeholder reference, and PR standards.
 
@@ -142,6 +143,24 @@ Output is organized at `~/Account Context/Q{N}_{YEAR}_Pipeline/` with:
 
 ---
 
+### `astro-pptx`
+
+Create branded Astronomer PowerPoint presentations (.pptx) from scratch, following the 2026 Astronomer Brand Guidelines. Best suited for sales decks, prospect decks, QBRs, and any customer-facing materials.
+
+**Run it**: ask naturally — `"make me a deck for Acme Corp"` or `"build a 10-slide sales deck about data orchestration"`
+
+**Output**: A `.pptx` file saved to `~/Downloads/` with full brand compliance — correct colors, fonts, dark/light mode rules, and Orbit design elements. Visual QA is run automatically before the file is returned.
+
+```
+astro-pptx "intro deck for Acme Corp's data engineering team"
+make me a sales deck about Astronomer for a prospect at Beta Inc
+build a 6-slide overview deck, mixed dark/light
+```
+
+**Requires**: `python3` + `python-pptx` (see [Setup](#setup-astro-pptx)). Optional: LibreOffice + Poppler for visual QA.
+
+---
+
 ## Setup
 
 Jump to the skill you want to use:
@@ -151,6 +170,7 @@ Jump to the skill you want to use:
 - [demo-prep](#setup-demo-prep)
 - [weekly-gong-review](#setup-weekly-gong-review)
 - [quarterly-pipeline-report](#setup-quarterly-pipeline-report)
+- [astro-pptx](#setup-astro-pptx)
 
 ---
 
@@ -492,6 +512,54 @@ python3 ~/Scripts/quarterly_pipeline_context.py --rep "Vishwa" --quarter "Q1 202
 ```
 
 Output location: `~/Account Context/Q{N}_{YEAR}_Pipeline/`
+
+---
+
+### Setup: astro-pptx
+
+This skill only needs Python and `python-pptx`. No API keys or MCP servers required.
+
+**1. Install the skill**
+
+```bash
+mkdir -p ~/.claude/skills/astro-pptx/references
+cp skills/astro-pptx/SKILL.md ~/.claude/skills/astro-pptx/SKILL.md
+cp skills/astro-pptx/references/brand.md ~/.claude/skills/astro-pptx/references/brand.md
+```
+
+Restart Claude Code.
+
+**2. Install Python dependency**
+
+```bash
+pip install python-pptx
+```
+
+**3. Install QA dependencies** (optional but recommended — needed for visual slide inspection)
+
+```bash
+# macOS
+brew install libreoffice poppler
+```
+
+**4. (Optional) Add your brand guidelines PPTX**
+
+If you have an updated brand guidelines file, you can point the skill at it when asking for a deck:
+
+```
+make me a sales deck for Acme Corp — brand guidelines are at ~/Downloads/brand-guidelines.pptx
+```
+
+The brand spec is fully embedded in `references/brand.md` so the file is not required.
+
+**5. Run it**
+
+```
+make me a 10-slide intro deck for Acme Corp
+astro-pptx "QBR deck for Beta Inc — Q1 2026 review"
+```
+
+Output saves to `~/Downloads/<deck-name>.pptx`.
 
 ---
 
