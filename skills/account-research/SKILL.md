@@ -39,7 +39,9 @@ JOIN HQ.MODEL_CRM_SENSITIVE.GONG_CALLS c ON t.CALL_ID = c.CALL_ID
 WHERE UPPER(t.ACCT_NAME) LIKE UPPER('%{COMPANY_NAME}%')
   AND c.IS_DELETED = FALSE
 ```
-Use `mcp__snowflake__execute_query` to run this. If `call_count = 0`, set `GONG_HAS_CALLS=false` — skip Gong in Agent 2 and record "No prior Gong calls found. Cold outreach."
+Use `mcp__snowflake__execute_query` to run this. Store result as `GONG_CALL_COUNT`.
+- If `GONG_CALL_COUNT = 0`: set `GONG_HAS_CALLS=false` — skip Agent 3 entirely and record "No prior Gong calls found. Cold outreach."
+- If `GONG_CALL_COUNT > 0`: set `GONG_HAS_CALLS=true` and note whether `GONG_CALL_COUNT > 20` — Agent 3 will use a two-phase query for large accounts.
 
 **b) Prompt template check**:
 ```bash
@@ -73,9 +75,25 @@ print('LEADFEEDER_CACHE_MISS')
 ```
 Store result as `LEADFEEDER_CACHE_STATUS`. If `CACHE_HIT`, load `~/claude-work/leadfeeder-cache/leads.json` into memory as `LEADFEEDER_LEADS` — Agent 2 will use these directly and skip all pagination. If `CACHE_MISS`, Agent 2 will paginate and populate the cache after.
 
-### Step 3: Collect Data (2 Parallel Agents)
+**e) Apollo account + intent pre-fetch** (skip if no `APOLLO_API_KEY`):
 
-Launch both agents simultaneously using the Agent tool with subagent_type="general-purpose":
+Search Apollo for the account by domain now, so intent signals are available during report assembly (not just at Step 8 sync time):
+```bash
+curl -s -X POST "https://api.apollo.io/v1/accounts/search" \
+  -H "Content-Type: application/json" \
+  -d "{\"api_key\": \"$APOLLO_API_KEY\", \"q_organization_name\": \"{COMPANY_NAME}\", \"per_page\": 10}"
+```
+Filter results by `domain == "{DOMAIN}"`. If found:
+- Store `APOLLO_ACCOUNT_ID` for use in Step 8 (skip the search there)
+- Extract `intent_signal_account.website_visitor_metrics` if present — store as `APOLLO_INTENT_DATA`
+- Extract `intent_signal_account.domain_aggregates[].top_5_paths` — these are the actual pages visited on astronomer.io, ranked by visit count. Store as `APOLLO_TOP_PAGES`
+- Extract `last_activity_date`, `organization_headcount_*_growth` fields
+
+If no domain match found: set `APOLLO_ACCOUNT_ID=null`. Log: "Apollo: no account found for {DOMAIN} — will attempt lookup again at Step 8."
+
+### Step 3: Collect Data (3 Parallel Agents)
+
+Launch all three agents simultaneously using the Agent tool with subagent_type="general-purpose":
 
 #### Agent 1: Public Research (Claude WebSearch + WebFetch as primary; Exa optional)
 
@@ -229,9 +247,9 @@ Use Claude's built-in **WebSearch** and **WebFetch** tools for all queries. If `
 
    Extract from full post text: specific tools named (exact names); scale/volume metrics; architecture decisions verbatim ("we chose X because Y"); pain points described; post date. If no blog post URLs were found in search 6, record "No public engineering blog found — signals lower data platform maturity."
 
-#### Agent 2: Internal Signals (Leadfeeder + Common Room + Gong)
+#### Agent 2: Internal Signals (Leadfeeder + Common Room)
 
-Launch **Leadfeeder, Common Room, and Gong simultaneously** — three parallel tool calls. Skip Gong if `GONG_HAS_CALLS=false`.
+Launch **Leadfeeder and Common Room simultaneously** — two parallel tool calls.
 
 ---
 
@@ -319,9 +337,11 @@ For each contact from 2a, assign a value tier:
 
 Flag any HIGH-tier contacts visiting Astronomer pages — that's an active buying signal.
 
----
+#### Agent 3: Gong Call History (only if `GONG_HAS_CALLS=true`)
 
-**Gong** (only if `GONG_HAS_CALLS=true`) — run in parallel with Leadfeeder and Common Room. Query Snowflake using `mcp__snowflake__execute_query`:
+Run in parallel with Agent 2. Dedicated agent so transcript volume doesn't pressure Agent 2's context window. Query Snowflake using `mcp__snowflake__execute_query`.
+
+**If `GONG_CALL_COUNT <= 20` — single query (all data at once):**
 
 ```sql
 SELECT
@@ -336,11 +356,37 @@ WHERE UPPER(t.ACCT_NAME) LIKE UPPER('%{COMPANY_NAME}%')
 ORDER BY t.SCHEDULED_TS DESC
 ```
 
-If no results, try a looser name match (first word only, or known abbreviations). Extract from results: call dates, participants (from `ATTENDEES`), topics, pain points, tech stack mentions, deal stage (`OPP_STAGE_AT_CALL`), follow-up items (`CALL_NEXT_STEPS`), and full transcript text (`FULL_TRANSCRIPT`).
+**If `GONG_CALL_COUNT > 20` — two-phase query to avoid single large result:**
+
+Phase 1 — fetch all call metadata without transcripts:
+```sql
+SELECT
+    t.CALL_ID, t.CALL_TITLE, t.CALL_URL, t.SCHEDULED_TS,
+    t.ACCT_NAME, t.OPP_NAME, c.OPP_STAGE_AT_CALL, c.CALL_DURATION,
+    t.CALL_BRIEF, t.CALL_NEXT_STEPS, t.ATTENDEES,
+    c.PRIMARY_EMPLOYEE
+FROM HQ.MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS t
+JOIN HQ.MODEL_CRM_SENSITIVE.GONG_CALLS c ON t.CALL_ID = c.CALL_ID
+WHERE UPPER(t.ACCT_NAME) LIKE UPPER('%{COMPANY_NAME}%')
+  AND c.IS_DELETED = FALSE
+ORDER BY t.SCHEDULED_TS DESC
+```
+
+Phase 2 — fetch transcripts in batches of 10 `CALL_ID`s at a time (run batches in parallel):
+```sql
+SELECT CALL_ID, FULL_TRANSCRIPT
+FROM HQ.MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS
+WHERE CALL_ID IN ('<id1>', '<id2>', ..., '<id10>')
+```
+Repeat until all `CALL_ID`s from Phase 1 are covered. Join Phase 2 results back to Phase 1 metadata by `CALL_ID`.
+
+If no results on any query, try a looser name match (first word only, or known abbreviations).
+
+Extract from all calls: call dates, participants (from `ATTENDEES`), topics, pain points, tech stack mentions, deal stage (`OPP_STAGE_AT_CALL`), follow-up items (`CALL_NEXT_STEPS`), and full transcript text (`FULL_TRANSCRIPT`).
+
+**All transcript data must be preserved in full.** Do not truncate, summarize, or drop any calls or transcript content.
 
 **Email history**: Not available via Snowflake — record "Email history not available (Snowflake source)." in the Email History section.
-
-**All transcript data must be preserved in full.** Do not truncate, summarize, or drop any calls or transcript content. Return every call and every word of `FULL_TRANSCRIPT` exactly as stored in Snowflake.
 
 ### Step 4: Assemble RAW INTELLIGENCE Block
 
@@ -586,14 +632,15 @@ Skip entirely if no `APOLLO_API_KEY` (from pre-flight). Log "Apollo sync skipped
 
 - **Field ID**: `6998b33edacda9000deb48ca`
 - Use `typed_custom_fields` (keyed by field ID), NOT `custom_fields` (silently ignored)
+- **Input override**: If the user provided a direct Apollo URL (e.g. `https://app.apollo.io/#/accounts/{ID}`), extract the account ID and skip account lookup entirely — go straight to step 2.
 
-1. Find account — search by name, confirm by domain:
+1. Find account — if `APOLLO_ACCOUNT_ID` was already found in pre-flight Step 2e, use it directly (skip this search). Otherwise search by name, confirm by domain:
    ```bash
    curl -s -X POST "https://api.apollo.io/v1/accounts/search" \
      -H "Content-Type: application/json" \
      -d "{\"api_key\": \"$APOLLO_API_KEY\", \"q_organization_name\": \"{COMPANY_NAME}\", \"per_page\": 10}"
    ```
-   Find the result where `account.domain == "{DOMAIN}"`. If none match, skip and log: "Apollo: No account found matching domain {DOMAIN}."
+   Filter to the result where `account.domain == "{DOMAIN}"`. Apply ownership filtering as documented in the original Step 8. If no domain match found, skip and log: "Apollo: No account found matching domain {DOMAIN}."
 
 2. Write report and verify success:
    ```bash
