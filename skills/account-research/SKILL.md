@@ -334,14 +334,13 @@ JOIN HQ.MODEL_CRM_SENSITIVE.GONG_CALLS c ON t.CALL_ID = c.CALL_ID
 WHERE UPPER(t.ACCT_NAME) LIKE UPPER('%{COMPANY_NAME}%')
   AND c.IS_DELETED = FALSE
 ORDER BY t.SCHEDULED_TS DESC
-LIMIT 10
 ```
 
 If no results, try a looser name match (first word only, or known abbreviations). Extract from results: call dates, participants (from `ATTENDEES`), topics, pain points, tech stack mentions, deal stage (`OPP_STAGE_AT_CALL`), follow-up items (`CALL_NEXT_STEPS`), and full transcript text (`FULL_TRANSCRIPT`).
 
 **Email history**: Not available via Snowflake — record "Email history not available (Snowflake source)." in the Email History section.
 
-**Gong transcript size cap**: If the returned transcripts total more than 30,000 words, keep only the 5 most recent calls and truncate each `FULL_TRANSCRIPT` to 3,000 words. Preserve all metadata. Note the truncation: "Transcripts truncated: kept 5 most recent of N total calls."
+**Gong transcript size cap**: Retrieve all calls. If the total transcript text exceeds 30,000 words, keep full metadata for every call (date, participants, `CALL_BRIEF`, `CALL_NEXT_STEPS`) but truncate `FULL_TRANSCRIPT` to 1,000 words per call. Note the truncation: "Transcripts truncated: full metadata for all N calls, transcript bodies capped at 1,000 words each."
 
 ### Step 4: Assemble RAW INTELLIGENCE Block
 
