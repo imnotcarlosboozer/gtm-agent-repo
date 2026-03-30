@@ -207,4 +207,7 @@ This section is updated automatically by the daily skill-refresh cron. Each entr
 - `QUERY_HISTORY` requires `SNOWFLAKE.ACCOUNT_USAGE` schema — not accessible under current role
 - `INFORMATION_SCHEMA.QUERY_HISTORY()` table function doesn't support named params in this account config
 - No clustering keys are set on any tables — Snowflake relies on micro-partition pruning via natural sort order on date columns
+
+**2026-03-30** — Schema correction from refresh run; no new user queries in past 24h:
+- `INFORMATION_SCHEMA.QUERY_HISTORY_BY_USER` does NOT have `PARTITIONS_SCANNED` or `PARTITIONS_TOTAL` columns — those only exist in `SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY` (requires elevated role). Use `BYTES_SCANNED` as the scan-size proxy when using the `INFORMATION_SCHEMA` table function.
 <!-- PATTERNS_LOG_END -->
