@@ -16,7 +16,7 @@ The user has asked: {{args}}
 
 - **Account**: `fy02423-gp21411`
 - **User**: `JOSEPHKENNEY`
-- **Default warehouse**: `HUMANS` (X-Small, auto-suspend 60s)
+- **Default warehouse**: `HUMANS` (X-Small, auto-suspend 60s) — **only valid warehouse; `ANALYST_WH` does not exist**
 - **Primary database**: `HQ`
 - **Auth**: RSA key pair via `PRIVATE_KEY_PASSPHRASE` env var (already configured)
 
@@ -84,8 +84,8 @@ END_DATE     DATE       -- Period end
 | `MODEL_CRM.SF_CONTACTS` | Salesforce contacts. Has `ASTRO_USER_ID` link. No email column (privacy) — use Salesforce URL. Has `CONTACT_URL`, `TITLE`, `PRIMARY_DOMAIN`. |
 | `MODEL_CRM.SF_ACCOUNTS` | Salesforce accounts. Key columns: `ACCT_NAME`, `OWNER_NAME`, `ZD_ORG_ID` (link to Zendesk). Use for rep-scoped queries or Zendesk joins. |
 | `MODEL_SUPPORT.ZD_ORG` | Zendesk org table. Join to `SF_ACCOUNTS` on `ZD_ORG_ID` for support ticket context. |
-| `MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS` | Gong transcript text. Key columns: `CALL_ID`, `ACCT_NAME`. Join to `GONG_CALLS` on `CALL_ID`. |
-| `MODEL_CRM_SENSITIVE.GONG_CALLS` | Gong call metadata. Key columns: `CALL_ID`, `IS_DELETED`. Always filter `IS_DELETED = FALSE`. |
+| `MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS` | Gong transcript text. Key columns: `CALL_ID`, `ACCT_NAME`, `CALL_TITLE`, `CALL_URL`, `SCHEDULED_TS`, `OPP_NAME`, `CALL_BRIEF`, `CALL_NEXT_STEPS`, `ATTENDEES`, `FULL_TRANSCRIPT`. Join to `GONG_CALLS` on `CALL_ID`. |
+| `MODEL_CRM_SENSITIVE.GONG_CALLS` | Gong call metadata. Key columns: `CALL_ID`, `IS_DELETED`, `OPP_STAGE_AT_CALL`, `CALL_DURATION`, `PRIMARY_EMPLOYEE`. Always filter `IS_DELETED = FALSE`. |
 
 ### Layer 1 — IN (raw ingested)
 
@@ -162,6 +162,44 @@ SELECT
     c.PROJECTED_FULL_CREDIT_USE_DATE_30D
 FROM HQ.MART_CUST.CURRENT_ASTRO_CUSTS c
 WHERE UPPER(ACCT_NAME) LIKE '%CUSTOMER_NAME%'
+```
+
+### Pattern 5: Gong call fetch by account name
+
+Two-step pattern: count check first, then full fetch.
+
+```sql
+-- Step 1: confirm calls exist (fast — uses result cache on repeat)
+SELECT COUNT(*) AS call_count
+FROM HQ.MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS t
+JOIN HQ.MODEL_CRM_SENSITIVE.GONG_CALLS c ON t.CALL_ID = c.CALL_ID
+WHERE UPPER(t.ACCT_NAME) LIKE UPPER('%ACCOUNT_NAME%')
+  AND c.IS_DELETED = FALSE
+
+-- Step 2: full fetch with all relevant fields
+SELECT
+    t.CALL_ID, t.CALL_TITLE, t.CALL_URL, t.SCHEDULED_TS,
+    t.ACCT_NAME, t.OPP_NAME, c.OPP_STAGE_AT_CALL, c.CALL_DURATION,
+    t.CALL_BRIEF, t.CALL_NEXT_STEPS, t.ATTENDEES,
+    c.PRIMARY_EMPLOYEE, t.FULL_TRANSCRIPT
+FROM HQ.MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS t
+JOIN HQ.MODEL_CRM_SENSITIVE.GONG_CALLS c ON t.CALL_ID = c.CALL_ID
+WHERE UPPER(t.ACCT_NAME) LIKE UPPER('%ACCOUNT_NAME%')
+  AND c.IS_DELETED = FALSE
+ORDER BY t.SCHEDULED_TS DESC
+```
+
+### Pattern 6: Rep-scoped account list with Zendesk link
+
+```sql
+WITH rep_accounts AS (
+    SELECT a.ACCT_NAME, a.ZD_ORG_ID
+    FROM HQ.MODEL_CRM.SF_ACCOUNTS a
+    WHERE a.OWNER_NAME = 'Rep Name'
+)
+SELECT r.ACCT_NAME, z.*
+FROM rep_accounts r
+JOIN HQ.MODEL_SUPPORT.ZD_ORG z ON r.ZD_ORG_ID = z.ORG_ID
 ```
 
 ---
@@ -244,4 +282,9 @@ Each entry captures a query pattern that was used successfully or a correction t
 - Four new tables confirmed: `MODEL_CRM.SF_ACCOUNTS` (`OWNER_NAME`, `ZD_ORG_ID`), `MODEL_SUPPORT.ZD_ORG`, and `MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS`/`GONG_CALLS` (join on `CALL_ID`; always filter `IS_DELETED = FALSE` on GONG_CALLS; filter by `ACCT_NAME` on transcripts)
 - `METRONOME_RATE_CARD_ITEMS` has `PRICING_GROUP_OBJECT_DEFINITION` column — use `LIKE '%small%'` (or scheduler type) to filter scheduler-specific rates without parsing `PRICING_GROUP_KEYS` JSON
 - `METRONOME_DEPLOYMENT_EVENTS` has both `EVENT_TS` and `START_TIMESTAMP` date columns (confirmed both work for date range filtering); `DEPLOYMENT_COST_MULTI` can also be filtered by `METRONOME_ID` in addition to `ORG_ID`
+
+**2026-04-01** — 48 queries observed (Gong cron runs + ad-hoc cost analysis):
+- `GONG_CALL_TRANSCRIPTS` full column set confirmed: `CALL_ID`, `ACCT_NAME`, `CALL_TITLE`, `CALL_URL`, `SCHEDULED_TS`, `OPP_NAME`, `CALL_BRIEF`, `CALL_NEXT_STEPS`, `ATTENDEES`, `FULL_TRANSCRIPT`; `GONG_CALLS` additional columns: `OPP_STAGE_AT_CALL`, `CALL_DURATION`, `PRIMARY_EMPLOYEE`
+- `ANALYST_WH` warehouse does not exist — caused "No active warehouse" failures on 2 Gong queries; always connect with `HUMANS` warehouse, never switch via `USE WAREHOUSE`
+- Gong count-then-fetch pattern well-established: count check first (~100-700ms), then full transcript fetch only if calls exist; result cache (BYTES=0) kicks in reliably on repeated identical count queries
 <!-- PATTERNS_LOG_END -->
