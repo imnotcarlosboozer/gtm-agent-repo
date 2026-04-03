@@ -154,7 +154,7 @@ END_DATE     DATE       -- Period end
 | `MODEL_SUPPORT.ZD_ORGS` | Raw Zendesk org data. `ORG_ID`, `ORG_NAME`, `DOMAIN_NAMES` (array — use `LATERAL FLATTEN` for domain matching), `IS_DELETED`. Different schema from `MAPS.ZD_ORGS` — use this for domain-based ZD org resolution. |
 | `MODEL_CRM.SF_ACCOUNT_DOMAINS` | Domain→account mapping. `ACCT_ID`, `EMAIL_DOMAIN`, `IS_UNIQUE_DOMAIN`. Use `IS_UNIQUE_DOMAIN = TRUE` to avoid false matches on shared domains (e.g. gmail.com). |
 | `MODEL_ASTRO.ORGANIZATIONS` | Org metadata. **FK to SF is `SF_ACCT_ID` (not `ACCT_ID`)** — naming inconsistency vs all other tables. Has `PRODUCT_TIER` (trial/paygo/team/enterprise/etc), `IS_TRIAL`, `IS_POV`, `IS_OBSERVE_ENABLED`, `METRONOME_ID`. Filter `IS_DELETED = FALSE AND IS_INTERNAL = FALSE`. |
-| `MODEL_ASTRO.DEPLOYMENTS` | Deployment config. `EXECUTOR` (Celery/Astro/Kubernetes/Stellar), `SCHEDULER_SIZE` (small/medium/large), `CLUSTER_TYPE` (HOSTED/SHARED/BRING_YOUR_OWN_CLOUD), `AIRFLOW_VERSION`, `IS_REMOTE_EXECUTION_ENABLED`, `HAS_CICD_ENFORCEMENT`. Filter `IS_DELETED = FALSE`. |
+| `MODEL_ASTRO.DEPLOYMENTS` | Deployment config. `EXECUTOR` (Celery/Astro/Kubernetes/Stellar), `SCHEDULER_SIZE` (small/medium/large), `CLUSTER_TYPE` (HOSTED/SHARED/BRING_YOUR_OWN_CLOUD), `AIRFLOW_VERSION`, `CLOUD_PROVIDER` (aws/gcp/azure), `IS_REMOTE_EXECUTION_ENABLED`, `HAS_CICD_ENFORCEMENT`. Filter `IS_DELETED = FALSE`. |
 | `MODEL_CONTRACTS.SF_CUST_CONTRACTS` | Contract terms per opp. `BASE_RATE`, `ON_DEMAND_RATE`, `RESERVED_CAPACITY`, `IS_ANNUAL`, `IS_M2M`, `ASTRO_ORG_ID`. Filter `IS_ACTIVE_CONTRACT = TRUE AND IS_LATEST = TRUE` for current terms. More granular than `ACCT_PRODUCT_ARR`. |
 | `MODEL_ECOSYSTEM.SCARF_COMPANY_ARTIFACT_EVENTS` | OSS download signals by company domain. `COMPANY_NAME`, `COMPANY_DOMAIN`, `ARTIFACT_NAME`, `EVENT_COUNT`, `IS_COSMOS_DOCS_PAGE_VIEW`, `IS_DAG_FACTORY_DOWNLOAD`. No direct SF join — match via domain → `SF_ACCOUNT_DOMAINS`. Good for prospecting. |
 | `MODEL_EDU.SKILLJAR_COURSE_PROGRESS` | Training completion. `STUDENT_ID`, `COURSE_NAME`, `IS_COMPLETED`, `IS_CERTIFICATION`, `DAYS_TO_COMPLETE`. Good for onboarding health. |
@@ -593,6 +593,9 @@ Values: trial, basic_paygo, developer_paygo, team, team_paygo, standard, enterpr
 **`MODEL_ASTRO.DEPLOYMENTS.EXECUTOR`**
 Values: CeleryExecutor, AstroExecutor, KubernetesExecutor, StellarExecutor
 
+**`MODEL_ASTRO.DEPLOYMENTS.CLOUD_PROVIDER`**
+Values: aws, gcp, azure
+
 **`MODEL_ASTRO.DEPLOYMENTS.SCHEDULER_SIZE`**
 Values: small, medium, large, extra_large (note: SCHEDULER_CPU and SCHEDULER_RAM are identical for small vs medium — cannot use to estimate cost diff)
 
@@ -701,4 +704,8 @@ Each entry captures a query pattern that was used successfully or a correction t
 - `MODEL_CRM.SF_ACCOUNT_DOMAINS` confirmed: `ACCT_ID`, `EMAIL_DOMAIN`, `IS_UNIQUE_DOMAIN` — use `IS_UNIQUE_DOMAIN = TRUE` for domain→account resolution to avoid false matches on shared domains.
 - `DEPLOYMENT_COST_MULTI` with `TIME_GRAIN = 'month'` and single-date + single-ORG_ID filters still scans ~1.8GB; monthly report cron accepts this but ad-hoc queries should add `METRONOME_ID` filter or use `ORG_COST_MULTI` if deployment breakdown isn't needed.
 - Monthly report cron (account research) confirmed running clean: 5-query batch per account (CURRENT_ASTRO_CUSTS + ORG_COST_MULTI + ORG_ACTIVITY_MULTI + METRONOME_CREDIT_GRANTS + DEPLOYMENT_COST_MULTI); subsequent cron runs hit result cache (BYTES_SCANNED=0) for all 5.
+**2026-04-03** — 44 queries observed (Gong cron + paygo analysis + account research):
+- `GTM.PUBLIC.GONG_CALL_ENRICHMENTS` and `GTM.GONG.GONG_CALLS` do NOT exist — no `GTM` database; Gong call data lives exclusively in `HQ.MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS` / `GONG_CALLS`; two failed queries wasted ~5s combined
+- `ORG_ACTIVITY_MULTI` has an `ACCT_NAME` column and was filtered by it directly, but missing `TIME_GRAIN = 'day'` caused a 2.7GB scan (Rule #2 violation) — TIME_GRAIN filter is required even when filtering by ACCT_NAME, not just ORG_ID
+- New paygo customer lookup pattern confirmed: join `CURRENT_ASTRO_CUSTS c` + `MODEL_ASTRO.ORGANIZATIONS o` ON `c.ORG_ID = o.ORG_ID`, filter `o.PRODUCT_TIER IN ('basic_paygo', 'developer_paygo', 'team_paygo')` — `IN_ASTRO_DB_PROD.ORGANIZATION.BILLING_EMAIL` and `MODEL_ASTRO.DEPLOYMENTS.CLOUD_PROVIDER` (new column, added to schema) used for paygo enrichment; `GONG_CALL_TRANSCRIPTS` fetch-by-CALL_ID pattern confirmed: `WHERE CALL_ID IN ('id1', 'id2', ...)` works as a second-step after resolving IDs via ACCT_NAME
 <!-- PATTERNS_LOG_END -->
