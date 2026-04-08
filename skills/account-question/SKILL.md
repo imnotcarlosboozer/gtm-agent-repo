@@ -1,104 +1,159 @@
 ---
 name: account-question
-description: Answer questions about any account using internal data sources (Gong call transcripts and saved account files). Use this skill whenever the user asks about an account's calls, what was discussed, pain points, tech stack, stakeholders, deal status, objections, competitors, or anything that would be answered by reviewing internal sales data. Also trigger when the user mentions "Gong", "calls", "transcripts", or asks things like "what did we talk about with [company]", "what's going on with [account]", or "draft an email for [account]". Even if the user doesn't explicitly say "Gong", if they're asking a question about an account that sounds like it needs internal conversation history to answer, use this skill.
+description: Answer questions about any account using internal data sources (Snowflake ACCOUNT_360_V, ACCOUNT_NOTES, Gong transcripts, CRM). Use this skill whenever the user asks about an account's calls, what was discussed, pain points, tech stack, stakeholders, deal status, objections, competitors, or anything that would be answered by reviewing internal sales data. Also trigger when the user mentions "Gong", "calls", "transcripts", or asks things like "what did we talk about with [company]", "what's going on with [account]", or "draft an email for [account]". Even if the user doesn't explicitly say "Gong", if they're asking a question about an account that sounds like it needs internal conversation history to answer, use this skill.
 ---
 
 # Account Question
 
-Answer questions about an account using internal data: Gong call transcripts and saved account context from prior conversations.
+Answer questions about an account using Snowflake as the primary source of truth — single-query snapshots, interaction history, Gong transcripts, CRM data — plus local fallback files.
 
 ## Architecture
 
-- **Gong transcripts**: Two-tier cache — global call index at `~/claude-work/gong-cache/all_calls/`, per-account transcripts/call details/emails at `~/claude-work/research-assistant/outputs/accounts/<account_name>/gong/`
-- **Gong emails**: Fetched automatically alongside transcripts. Cached per-account. Gracefully skipped if Gong email integration is not configured in the workspace.
-- **Account files**: `~/claude-work/research-assistant/outputs/accounts/<account_name>/` (report.md, interactions.md)
-- **QMD semantic index** (optional): If QMD is configured, Gong transcript markdown files and research reports are indexed for fast semantic retrieval. Falls back to script + file reads if QMD is unavailable.
+- **ACCOUNT_360_V**: Single-query pre-joined account snapshot (ARR, usage, Gong signals, ZD tickets, contacts, research)
+- **ACCOUNT_NOTES**: All interaction history — pre-call briefs, email drafts, Claude session notes, cron-generated summaries
+- **GONG_CALL_ENRICHMENTS_V + GONG_CALL_TRANSCRIPTS**: Enriched call signals + full transcripts
+- **Local fallback**: `~/claude-work/research-assistant/outputs/accounts/<slug>/` (report.md, interactions.md) — check if ACCOUNT_NOTES is sparse
 
 ## Input
 The user has provided: {{args}}
 
 This could be:
-- An account name with a question: "Acme Corp - what are their pain points?"
-- Just an account name: "Acme Corp" (give a general overview)
+- An account name with a question: "Iron Mountain - what are their pain points?"
+- Just an account name: "Iron Mountain" (give a general overview)
 - A follow-up question about a previously loaded account
 
 ## Steps
 
-### 0. Load Prior Context
+### 0. Resolve Account ID
 
-Before fetching anything, convert the account name to snake_case and check for existing files:
-- `~/claude-work/research-assistant/outputs/accounts/<account_name>/report.md` — prior research, fit score, pain points, contacts, objections
-- `~/claude-work/research-assistant/outputs/accounts/<account_name>/interactions.md` — prior email drafts, notes, action items from past conversations
-
-Read whatever exists. This gives you the full history so you don't repeat prior analysis and can build on previous conversations.
-
-### 1. Fetch Gong Transcripts
-
-**If QMD MCP tools are available** (`mcp__qmd__*`), try semantic retrieval first:
-
-1. Check if the account's transcripts are indexed:
-   ```
-   mcp__qmd__search(collection="gong", query="{ACCOUNT_NAME} {USER_QUESTION}", n=10)
-   ```
-2. If results are returned and cover the question well, use them directly — skip the script call below.
-3. If QMD returns no results or the account isn't indexed yet, fall through to the script.
-
-**If QMD is unavailable or returned no results**, run the script:
-
-```bash
-python3 -u ~/claude-work/gong_account_transcripts.py "ACCOUNT_NAME" --stdout
+Check the ID cache in SKILL.md first. If found, use `ACCT_ID` directly in all queries (fastest). If not cached, resolve via:
+```sql
+SELECT ACCT_ID, ACCT_NAME, ORG_ID FROM HQ.MART_CUST.CURRENT_ASTRO_CUSTS
+WHERE ACCT_NAME ILIKE '%{ACCOUNT_NAME}%' LIMIT 1
 ```
 
-The script automatically checks the global call index cache and does an incremental update if needed. After it completes, generate the account's markdown file for future QMD indexing:
+### 1. Full Account Snapshot + Interaction History (run in parallel)
 
-```bash
-python3 ~/claude-work/gong_json_to_markdown.py --account "ACCOUNT_NAME"
+**Query A — ACCOUNT_360_V** (single query, all signals pre-joined):
+```sql
+SELECT ACCT_NAME, TOTAL_ARR_AMT, USAGE_AMT_30D, CREDIT_BALANCE,
+       CONTRACT_END_DATE, DAYS_TO_RENEWAL, USAGE_VS_CONTRACT_TARGET_PCT_30D,
+       CREDIT_UTILIZATION_PCT, PROJECTED_FULL_CREDIT_USE_DATE_30D,
+       OWNER_NAME, FIELD_ENGINEER, CUST_SUCCESS_MANAGER,
+       LAST_CALL_DATE, LAST_GONG_SENTIMENT, LAST_DEAL_RISK, LAST_PAIN_POINTS, CALL_COUNT_90D,
+       OPEN_TICKET_COUNT, P1_OPEN_COUNT, LAST_TICKET_DATE, AVG_ZD_SENTIMENT,
+       CONTACT_COUNT, PRODUCT_USER_COUNT, DOMAIN_HAS_CERTIFICATION,
+       VISITS_30D, LAST_VISIT_DATE,
+       RESEARCH_SCORE, RESEARCH_TIER, KEY_SIGNALS
+FROM GTM.PUBLIC.ACCOUNT_360_V
+WHERE ACCT_ID = '{ACCT_ID}'
 ```
-(Skip silently if `gong_json_to_markdown.py` is not present.)
 
-If unsure of the exact account name, list available accounts:
-```bash
-python3 ~/claude-work/gong_account_transcripts.py --list-accounts
+**Query B — ACCOUNT_NOTES** (all prior interaction history):
+```sql
+SELECT NOTE_DATE, NOTE_TYPE, SOURCE, CONTENT
+FROM GTM.PUBLIC.ACCOUNT_NOTES
+WHERE ACCT_ID = '{ACCT_ID}'
+ORDER BY NOTE_DATE DESC, CREATED_AT DESC
+LIMIT 20
 ```
 
-For very large accounts, narrow the time window:
-```bash
-python3 -u ~/claude-work/gong_account_transcripts.py "ACCOUNT_NAME" --months 3 --stdout
+Read both. ACCOUNT_NOTES gives you full conversation history — what was discussed, email drafts already sent, pre-call briefs already generated.
+
+### 2. CRM Deep-Dive (run in parallel with Step 3 if needed)
+
+Only run if 360_V doesn't have enough detail on opp or contacts.
+
+**Query 2A — Opportunity history**:
+```sql
+SELECT o.OPP_NAME, o.CURRENT_STAGE_NAME, o.IS_WON, o.IS_LOST, o.IS_OPEN,
+       o.LOSS_REASON, o.LOSS_DETAILS, o.COMPETITION, o.CLOUD_PROVIDER,
+       o.AIRFLOW_EXPERIENCE, o.AIRFLOW_COMMITMENT,
+       o.CURRENT_AIRFLOW_DEPLOYMENT_MODEL, o.CURRENT_AIRFLOW_VERSIONS,
+       o.CREATED_DATE, o.WON_DATE, o.LOST_DATE, o.AMT, o.NEXT_STEPS
+FROM HQ.MODEL_CRM.SF_OPPS o
+WHERE o.ACCT_ID = '{ACCT_ID}'
+ORDER BY o.CREATED_DATE DESC
+LIMIT 10
 ```
 
-### 2. Answer the Question
+**Query 2B — Contacts with intent signals** (use CONTACT_360_V — richer than raw SF_CONTACTS):
+```sql
+SELECT TITLE, CONTACT_STATUS, LEAD_SCORE_GRADE, IS_PRODUCT_USER,
+       LAST_VISITED_PRICING_PAGE_DATE, LAST_VISITED_DEBUGGING_AIRFLOW_PAGE_DATE,
+       LAST_MQL_DATE, MQL_COUNT, LAST_MQL_CHANNEL, DOMAIN_HAS_CERTIFICATION,
+       IS_OPTED_OUT_OF_EMAIL, CONTACT_URL, LAST_ACTIVITY_TS
+FROM GTM.PUBLIC.CONTACT_360_V
+WHERE ACCT_ID = '{ACCT_ID}'
+ORDER BY LAST_ACTIVITY_TS DESC NULLS LAST
+LIMIT 15
+```
 
-Use all available context — saved account files, Gong transcripts, and Gong email history — to answer whatever the user asked.
+### 3. Gong Call Detail (if question requires call-level specifics)
 
-**Email history** appears in the script output under `## Email History`. If emails were captured, include relevant email threads (subject lines, direction, key content) when summarizing the account relationship. If emails are unavailable (integration not configured), note it briefly and move on.
+**Enrichment summary** (pain points, sentiment, deal risk — last 5 calls):
+```sql
+SELECT e.CALL_DATE, e.SENTIMENT_SCORE, e.DEAL_RISK,
+       e.PAIN_POINTS, e.TECH_STACK, e.COMPETITORS, e.AIRFLOW_TOPICS,
+       c.CALL_TITLE, c.CALL_URL, c.CALL_BRIEF, c.CALL_NEXT_STEPS,
+       c.PRIMARY_EMPLOYEE, c.CALL_DURATION
+FROM GTM.PUBLIC.GONG_CALL_ENRICHMENTS_V e
+JOIN HQ.MODEL_CRM_SENSITIVE.GONG_CALLS c ON e.CALL_ID = c.CALL_ID
+WHERE e.ACCT_ID = '{ACCT_ID}'
+  AND c.IS_DELETED = FALSE
+ORDER BY e.CALL_DATE DESC
+LIMIT 5
+```
 
-If no specific question was asked, provide a brief overview:
-- What recent calls covered
-- Key contacts and their roles
-- Current state of the relationship
+**Full transcript** (only if user asks "what exactly was said" or needs verbatim quotes):
+```sql
+SELECT t.CALL_TITLE, t.SCHEDULED_TS, t.CALL_BRIEF, t.CALL_NEXT_STEPS,
+       t.ATTENDEES, t.FULL_TRANSCRIPT
+FROM HQ.MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS t
+JOIN HQ.MODEL_CRM_SENSITIVE.GONG_CALLS c ON t.CALL_ID = c.CALL_ID
+WHERE t.ACCT_NAME ILIKE '%{ACCOUNT_NAME}%'
+  AND c.IS_DELETED = FALSE
+ORDER BY t.SCHEDULED_TS DESC
+LIMIT 3
+```
 
-### 3. Save Output
+### 4. Local File Fallback
 
-After answering, append a dated entry to the account's interactions log:
-`~/claude-work/research-assistant/outputs/accounts/<account_name>/interactions.md`
+If ACCOUNT_NOTES is empty (account hasn't been discussed in a Claude session yet), also check:
+- `~/claude-work/research-assistant/outputs/accounts/<slug>/report.md` — prior research output
+- `~/claude-work/research-assistant/outputs/accounts/<slug>/interactions.md` — any legacy local notes
 
-- Use snake_case for the folder name (e.g., `oto_crm`)
-- Create the folder/file if it doesn't exist
-- Only save NEW outputs (the answer, email drafts, action items). Don't duplicate `report.md` content.
-- Format: `## YYYY-MM-DD — <brief topic>` followed by the output
+These are secondary. Snowflake is the source of truth going forward.
 
-### 4. Stay Ready for Follow-Ups
+### 5. Answer the Question
 
-The user will likely ask follow-up questions. The data is already in context, so answer directly — no need to re-fetch. Save follow-up outputs to the same interactions file.
+Use all gathered context to answer. Surface the most actionable signals first:
+- `LAST_DEAL_RISK` + `LAST_PAIN_POINTS` — what's driving deal risk right now
+- `SF_OPPS.AIRFLOW_EXPERIENCE` + `COMPETITION` — what they said in discovery
+- `LAST_VISITED_PRICING_PAGE_DATE` on contacts — buying signal (flag if within 30 days)
+- Renewal proximity (`DAYS_TO_RENEWAL`) — urgency flag
+- Recent ACCOUNT_NOTES entries — what was already discussed / decided
 
-## Notes
-- Global Gong call index is synced daily via cron (6 AM) and incrementally on each query
-- Per-account transcripts and emails are cached separately and updated when new calls appear
-- Email history appears under `## Email History` in script output; gracefully skipped if Gong email integration is not active
-- Use `--no-cache` to bypass all Gong caches if you need completely fresh data
-- Use `--refresh-cache` to force a full rebuild of the global call index
-- Use `--sync` to just update the global index without querying an account
-- QMD index is optional — skill works fully without it. To set it up, see the QMD section in the repo README
+If no specific question was asked, give a brief overview: deal status, key contacts, recent call themes, any risks or signals worth acting on.
+
+### 6. Save Output
+
+After answering, persist the note via:
+```bash
+source ~/.zshrc && $HOME/.venvs/snowflake/bin/python3 \
+  $HOME/claude-work/scripts/write_account_note.py \
+  --acct-id "{ACCT_ID}" \
+  --acct-name "{ACCT_NAME}" \
+  --note-type interaction \
+  --content "{markdown_summary_of_session}" \
+  --source claude
+```
+
+This also writes the local `interactions.md` fallback automatically.
+
+### 7. Stay Ready for Follow-Ups
+
+Data is already in context. Answer follow-up questions directly without re-querying. Save any new outputs (email drafts, action items) to ACCOUNT_NOTES with the appropriate `--note-type`.
 
 ---
 

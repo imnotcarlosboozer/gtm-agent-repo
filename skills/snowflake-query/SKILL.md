@@ -26,57 +26,58 @@ The user has asked: {{args}}
 
 Skip the `ACCT_NAME LIKE '%..%'` CTE lookup for these accounts — use IDs directly.
 
-| Account | ORG_ID | METRONOME_ID | ARR | Contract End |
-|---|---|---|---|---|
-| Third Point | `cl6e1hc82009l0s0ebuei60ec` | `406e7187-2fae-45d5-b96f-1c893bbf0e30` | $136K | 2026-05-15 |
-| Go Sonar (FreightWaves) | `cl8ub8vd001xe0uxz950r9c35` | `2d68588a-b985-43f8-a60f-75403ddcec18` | $78K | 2026-09-28 |
-| Advanced Symbolics | `clmz6bi9e00fm01hywjtgaj68` | `4441d863-d407-47dc-aa31-0171a3c78f40` | $54K | — |
-| Surge AI | `clthudyr0011301nzy9gvdtq1` | `33adbe27-fc52-4edb-bd06-d886927feed3` | $52K | — |
-| Boothbay Fund Management | `cmeohlt941c4f01pepwpyksne` | `1db2ab6c-8e65-408c-aaa0-cac2bcfce465` | $49K | — |
-| Premier Truck Rental LLC | `cmhbcy7ah01yj01nc3tmfooy5` | `6787d2e9-29cb-45ac-8452-15061763d15f` | $48K | 2026-10-31 |
-| MileIQ | `cm7wlc62d15j701q9oxzboucl` | `2816a23e-11e6-4818-a6b9-fb47a94ac20e` | $37K | 2026-04-06 |
-| Pulumi | `cmbz9v67x1tg201iyoi3kxpi2` | `cd3a1bf7-271b-499c-aaa2-7d7e9a4d4260` | $37K | 2026-08-18 |
-| Together Computer | `cmianzvn30dvy01kcmdamoe1q` | `e32e8a06-b47a-4453-b556-7e809ec7215c` | $36K | 2027-01-04 |
-| SpringWorks Therapeutics | `cm850f59l035g01ktwh5iwzpe` | `2c568dd9-ab11-4c29-a029-b8af1b7666a9` | $35K | 2026-04-13 |
-| Cordada | `clcuypvia0qe20t3d6c1if8ws` | `d83a4268-9deb-4369-b23f-2c56e728bab5` | $35K | 2027-01-04 |
-| Differential | `cljsvo6na00y101lvx7i51kjm` | `8e2c81c8-d8e6-4ab4-ba8b-3c28aeb1d581` | $35K | 2026-11-03 |
-| USAFacts | `clk31o2l600fs01hkyyw98pwt` | `4070cbd8-5721-46f6-8212-24d09dff4d49` | $32K | 2026-04-08 |
-| DLR | `cmc4xg1ih178v01ihhft678xg` | `2689990c-0ecc-486d-81cd-0ea4b12a3ba5` | $32K | 2026-07-24 |
-| Crexi | `cmhtofqia161w01me3veevo66` | `a2dd259a-1309-42ad-bc2a-89594808c2c8` | $30K | 2027-01-04 |
-| Rithm Capital | `cmf5gimkj3ls501psapalaz63` | `25f75fcb-5dc8-42d1-bbf3-898bf043e0f3` | $28K | 2028-10-31 |
-| GlossGenius | `cllmjc18y000801fgr9ehz27g` | `e3cfb8e8-d632-40ec-a9dd-8f1f12456298` | $28K | 2026-10-31 |
-| Parafin | `cljpyvrn4020t01lt2igt3kdo` | `ff00fbd8-f00c-4801-b7ef-29a34315557a` | $28K | 2026-08-22 |
-| Behaviour Interactive | `cl6fd5hg9010c0tzphpmgftz3` | `b658958a-42a3-4f14-b758-0f405ec50091` | $26K | 2026-10-10 |
-| Pretto | `cmk6y0dsn03dy01psb8earfkl` | `da14d290-2260-489c-9e3b-097636683397` | $25K | 2027-02-12 |
-| Pivotal Life Sciences | `clgzuej0u006t01lmwj6gigt3` | `9f55545c-61b7-4f36-8ae4-1ac8405f6020` | $25K | 2026-04-30 |
-| Ace 1 Media | `cly3qqsky145801k2ulltysqu` | `4a594f96-3f2a-4c11-a032-26305a8ee03f` | $25K | 2026-07-17 |
-| New Orleans Pelicans | `cm1du2l6y0zfs01j5dbi5wnxt` | `3a6ae7ce-859b-44c8-a9ce-e993d33727cb` | $24K | 2026-10-06 |
-| Saatchi Art | `cljsnv8kz00ut01gi8a2xpfcy` | `d28b22cf-e45a-42e4-af1c-f17e39249108` | $23K | 2027-01-29 |
-| Updater Inc. | `cloqcobtl003401kby4esrrmp` | `62b61b9d-ea01-41ea-a188-dc7c133fc839` | $22K | 2026-10-30 |
-| Middle Seat | `cmbqzrnkj1rge01lh73hyvhbl` | `9d7aa215-15a1-450b-b01d-5d0e4e2d6a68` | $21K | — |
-| NYCSBUS | `cl1w5kbm301ya0rzo0pyb7v1k` | `54369b0a-754c-4fa8-9004-7e7d291b781e` | $20K | 2026-03-31 |
-| NOW Insurance | `cloolp7z201yw01jhymmhlwwb` | `bc45e0fa-45ef-435b-8dfe-f570716b8512` | $18K | — |
-| Spoiler Alert | `cm6fgnbcj1ep501l3ilxb1xgj` | `4420b6b3-e761-4425-973b-25a007ec3b80` | $18K | 2027-02-27 |
-| JCA | `cmgv7px2p09ko01jxdnra9glk` | `c4392afb-73f5-4c0a-a7d0-a4bd14d20647` | $18K | — |
-| Draftea Technologies | `cl4eolzp300l20s0ec9gz9g2m` | `b2cd4ee8-a109-48b8-a93d-241dd73ef804` | $17K | 2026-05-31 |
-| Pyx Health | `cm976gqb51ila01madyh6c1mu` | `c6e007af-1a59-4df6-8928-4cada59cb45d` | $15K | — |
-| Black Crow AI | `clwqkqwwy0puu01nqtui7xyms` | `26c96d26-7530-4737-9c16-288025d248d7` | $15K | 2026-06-30 |
-| Hover | `clmkxwux3003201m2pdvybgtj` | `c9216665-f052-448f-938b-a7345b6ff770` | $14K | — |
-| Prizma | `clv5ueo3g054z01or4o0ztkft` | `528793e9-9d24-4891-a638-1be211aa779a` | $14K | — |
-| Panther Labs | `cl4rc9hvz004j0txb8jfw88f3` | `9b110534-a066-4740-aaff-a209fb2aaefc` | $13K | 2026-04-26 |
-| Huli | `clnmy428c008s01nx7hqs9w1t` | `423c2c9f-434c-4b9b-9f0d-479b9ed9f0a9` | $12K | — |
-| Envoy | `cln0iktux00uq01hyw80jht5v` | `583a55ee-5f9d-4936-b487-993ac4049b1d` | $12K | 2027-01-30 |
-| Tampa Bay Lightning | `clktxc1lr002401nzzajvletk` | `83b2beb0-d293-4af1-85b2-2789c4844a09` | $12K | 2026-10-30 |
-| Orita | `cma2t7w2j20uj01hvc0xjwrei` | `6ed17596-50e7-461f-b13e-14d1017404b2` | $12K | 2026-06-29 |
-| Sutco | `cln0nqfcz003x01nhjjv9osld` | `9be3e209-bc2d-4cd1-be7c-3f6ecbec59f8` | $12K | 2027-12-31 |
-| Rothy's | `clq0jrgbn00kl01m8ghcmw67f` | `8677403a-c9e3-4800-b2c8-3477df2d064e` | $11K | 2027-02-16 |
-| Lemba | `cm3pz2shq06w501np1yuy5iol` | `18c59364-2bc6-499b-a654-4dee8fa62216` | $11K | 2026-10-21 |
-| MarginEdge | `cm9n1pmd80ykw01m5bbkdmcv9` | `de1ed4b6-0c01-415c-86fe-5e56634292a9` | $10K | — |
-| RaveHealth | `cm05e7u59013n01n352gir6cb` | `9c7513f6-e811-4833-942a-271d414da30e` | $10K | 2026-09-30 |
-| MagicSchool AI | `cmfbox58l1icn01nt6bvlwg3n` | `36121aeb-26d0-4d21-8665-fb8595e63006` | $10K | 2026-11-02 |
-| PlaneSense | `clt68ead000js01k55vjqtek8` | `9f592c3a-09cc-47c2-829c-1ad2d99c6fc9` | $10K | 2026-04-30 |
+| Account | ACCT_ID (SF) | ORG_ID | METRONOME_ID | ARR | Contract End |
+|---|---|---|---|---|---|
+| Third Point | `0014x00000I7ph6AAB` | `cl6e1hc82009l0s0ebuei60ec` | `406e7187-2fae-45d5-b96f-1c893bbf0e30` | $136K | 2026-05-15 |
+| Go Sonar (FreightWaves) | `0014x00000dz5NwAAI` | `cl8ub8vd001xe0uxz950r9c35` | `2d68588a-b985-43f8-a60f-75403ddcec18` | $78K | 2026-09-28 |
+| Advanced Symbolics | `0014x000017PVw9AAG` | `clmz6bi9e00fm01hywjtgaj68` | `4441d863-d407-47dc-aa31-0171a3c78f40` | $54K | — |
+| Surge AI | `0014x00000seOeeAAE` | `clthudyr0011301nzy9gvdtq1` | `33adbe27-fc52-4edb-bd06-d886927feed3` | $52K | — |
+| Boothbay Fund Management | `001PQ00000Inu6qYAB` | `cmeohlt941c4f01pepwpyksne` | `1db2ab6c-8e65-408c-aaa0-cac2bcfce465` | $49K | — |
+| Premier Truck Rental LLC | `001PQ00000gl7fNYAQ` | `cmhbcy7ah01yj01nc3tmfooy5` | `6787d2e9-29cb-45ac-8452-15061763d15f` | $48K | 2026-10-31 |
+| Pulumi | `0014x00000GNSZ6AAP` | `cmbz9v67x1tg201iyoi3kxpi2` | `cd3a1bf7-271b-499c-aaa2-7d7e9a4d4260` | $37K | 2026-08-18 |
+| Together Computer | `001PQ00000AFyjAYAT` | `cmianzvn30dvy01kcmdamoe1q` | `e32e8a06-b47a-4453-b556-7e809ec7215c` | $36K | 2027-01-04 |
+| SpringWorks Therapeutics | `001PQ00000ERgJRYA1` | `cm850f59l035g01ktwh5iwzpe` | `2c568dd9-ab11-4c29-a029-b8af1b7666a9` | $35K | 2026-04-13 |
+| Cordada | `0014x00000sdkWVAAY` | `clcuypvia0qe20t3d6c1if8ws` | `d83a4268-9deb-4369-b23f-2c56e728bab5` | $35K | 2027-01-04 |
+| Differential | `0014x00000GMFd9AAH` | `cljsvo6na00y101lvx7i51kjm` | `8e2c81c8-d8e6-4ab4-ba8b-3c28aeb1d581` | $35K | 2026-11-03 |
+| USAFacts | `001Du000004GXcWIAW` | `clk31o2l600fs01hkyyw98pwt` | `4070cbd8-5721-46f6-8212-24d09dff4d49` | $32K | 2026-04-08 |
+| DLR | `001Du00000324PfIAI` | `cmc4xg1ih178v01ihhft678xg` | `2689990c-0ecc-486d-81cd-0ea4b12a3ba5` | $32K | 2026-07-24 |
+| Crexi | `001Du000002gpwZIAQ` | `cmhtofqia161w01me3veevo66` | `a2dd259a-1309-42ad-bc2a-89594808c2c8` | $30K | 2027-01-04 |
+| Rithm Capital | `001Du000003YrRKIA0` | `cmf5gimkj3ls501psapalaz63` | `25f75fcb-5dc8-42d1-bbf3-898bf043e0f3` | $28K | 2028-10-31 |
+| GlossGenius | `001Du000004SswEIAS` | `cllmjc18y000801fgr9ehz27g` | `e3cfb8e8-d632-40ec-a9dd-8f1f12456298` | $28K | 2026-10-31 |
+| Parafin | `0014x00000NQuMrAAL` | `cljpyvrn4020t01lt2igt3kdo` | `ff00fbd8-f00c-4801-b7ef-29a34315557a` | $28K | 2026-08-22 |
+| Behaviour Interactive | `0014x00000l0uEhAAI` | `cl6fd5hg9010c0tzphpmgftz3` | `b658958a-42a3-4f14-b758-0f405ec50091` | $26K | 2026-10-10 |
+| Pretto | `0014x00000g3H2WAAU` | `cmk6y0dsn03dy01psb8earfkl` | `da14d290-2260-489c-9e3b-097636683397` | $25K | 2027-02-12 |
+| Pivotal Life Sciences | `001Du000003elhgIAA` | `clgzuej0u006t01lmwj6gigt3` | `9f55545c-61b7-4f36-8ae4-1ac8405f6020` | $25K | 2026-04-30 |
+| Ace 1 Media | `001PQ00000GaBfiYAF` | `cly3qqsky145801k2ulltysqu` | `4a594f96-3f2a-4c11-a032-26305a8ee03f` | $25K | 2026-07-17 |
+| New Orleans Pelicans | `001PQ00000KPy79YAD` | `cm1du2l6y0zfs01j5dbi5wnxt` | `3a6ae7ce-859b-44c8-a9ce-e993d33727cb` | $24K | 2026-10-06 |
+| Saatchi Art | `0014x00000GMFuUAAX` | `cljsnv8kz00ut01gi8a2xpfcy` | `d28b22cf-e45a-42e4-af1c-f17e39249108` | $23K | 2027-01-29 |
+| Updater Inc. | `0014x00000A9O24AAF` | `cloqcobtl003401kby4esrrmp` | `62b61b9d-ea01-41ea-a188-dc7c133fc839` | $22K | 2026-10-30 |
+| Middle Seat | `001PQ00000ERfaNYAT` | `cmbqzrnkj1rge01lh73hyvhbl` | `9d7aa215-15a1-450b-b01d-5d0e4e2d6a68` | $21K | — |
+| NYCSBUS | `0014x0000123qn1AAA` | `cl1w5kbm301ya0rzo0pyb7v1k` | `54369b0a-754c-4fa8-9004-7e7d291b781e` | $20K | 2026-03-31 |
+| NOW Insurance | `0014x00000GMELrAAP` | `cloolp7z201yw01jhymmhlwwb` | `bc45e0fa-45ef-435b-8dfe-f570716b8512` | $18K | — |
+| Spoiler Alert | `0014x00000u5N6xAAE` | `cm6fgnbcj1ep501l3ilxb1xgj` | `4420b6b3-e761-4425-973b-25a007ec3b80` | $18K | 2027-02-27 |
+| JCA | `001PQ00000EJdNRYA1` | `cmgv7px2p09ko01jxdnra9glk` | `c4392afb-73f5-4c0a-a7d0-a4bd14d20647` | $18K | — |
+| Draftea Technologies | `0014x000017RT4bAAG` | `cl4eolzp300l20s0ec9gz9g2m` | `b2cd4ee8-a109-48b8-a93d-241dd73ef804` | $17K | 2026-05-31 |
+| Pyx Health | `0014x00000dxRcRAAU` | `cm976gqb51ila01madyh6c1mu` | `c6e007af-1a59-4df6-8928-4cada59cb45d` | $15K | — |
+| Black Crow AI | `001Du0000032zPLIAY` | `clwqkqwwy0puu01nqtui7xyms` | `26c96d26-7530-4737-9c16-288025d248d7` | $15K | 2026-06-30 |
+| Hover | `0014x00000GM7KzAAL` | `clmkxwux3003201m2pdvybgtj` | `c9216665-f052-448f-938b-a7345b6ff770` | $14K | — |
+| Prizma | `001PQ000007wQB5YAM` | `clv5ueo3g054z01or4o0ztkft` | `528793e9-9d24-4891-a638-1be211aa779a` | $14K | — |
+| Panther Labs | `0014x000014diPMAAY` | `cl4rc9hvz004j0txb8jfw88f3` | `9b110534-a066-4740-aaff-a209fb2aaefc` | $13K | 2026-04-26 |
+| Huli | `0014x00000DKqetAAD` | `clnmy428c008s01nx7hqs9w1t` | `423c2c9f-434c-4b9b-9f0d-479b9ed9f0a9` | $12K | — |
+| Envoy | `0014x00000GNOaTAAX` | `cln0iktux00uq01hyw80jht5v` | `583a55ee-5f9d-4936-b487-993ac4049b1d` | $12K | 2027-01-30 |
+| Tampa Bay Lightning | `0014x00000u5PgQAAU` | `clktxc1lr002401nzzajvletk` | `83b2beb0-d293-4af1-85b2-2789c4844a09` | $12K | 2026-10-30 |
+| Orita | `001PQ00000X7UeHYAV` | `cma2t7w2j20uj01hvc0xjwrei` | `6ed17596-50e7-461f-b13e-14d1017404b2` | $12K | 2026-06-29 |
+| Sutco | `0014x00000DKqdvAAD` | `cln0nqfcz003x01nhjjv9osld` | `9be3e209-bc2d-4cd1-be7c-3f6ecbec59f8` | $12K | 2027-12-31 |
+| Rothy's | `001Du000005G40fIAC` | `clq0jrgbn00kl01m8ghcmw67f` | `8677403a-c9e3-4800-b2c8-3477df2d064e` | $11K | 2027-02-16 |
+| Lemba | `0014x00000viwSPAAY` | `cm3pz2shq06w501np1yuy5iol` | `18c59364-2bc6-499b-a654-4dee8fa62216` | $11K | 2026-10-21 |
+| MarginEdge | `001PQ00000LnvcCYAR` | `cm9n1pmd80ykw01m5bbkdmcv9` | `de1ed4b6-0c01-415c-86fe-5e56634292a9` | $10K | — |
+| RaveHealth | `001PQ00000IeflGYAR` | `cm05e7u59013n01n352gir6cb` | `9c7513f6-e811-4833-942a-271d414da30e` | $10K | 2026-09-30 |
+| MagicSchool AI | `001PQ00000fwt9OYAQ` | `cmfbox58l1icn01nt6bvlwg3n` | `36121aeb-26d0-4d21-8665-fb8595e63006` | $10K | 2026-11-02 |
+| PlaneSense | `001PQ000007tSanYAE` | `clt68ead000js01k55vjqtek8` | `9f592c3a-09cc-47c2-829c-1ad2d99c6fc9` | $10K | 2026-04-30 |
+| Cozy Earth | `001PQ00000sSgIBYA0` | `cmn3jiuq64bla01pudh620bf4` | — | — | — |
+| BuildingMinds | `0014x00000bvRIyAAM` | `cmlr75fzo8f2v01om46irqnfe` | — | — | — |
 
-> **Note**: Cache generated 2026-04-01. Refresh periodically from `CURRENT_ASTRO_CUSTS WHERE OWNER_NAME ILIKE '%kenney%'`.
+> **Note**: Cache refreshed 2026-04-08. MileIQ removed (contract expired 2026-04-06). ACCT_IDs verified from `CURRENT_ASTRO_CUSTS`. Refresh from `CURRENT_ASTRO_CUSTS WHERE OWNER_NAME ILIKE '%kenney%'`.
 
 ---
 
@@ -132,14 +133,14 @@ END_DATE     DATE       -- Period end
 
 | Table | What it is |
 |---|---|
-| `MODEL_ASTRO.USERS` | All users. Has `USER_ID`, `EMAIL_DOMAIN`, `STATUS`. **No full email stored.** |
+| `MODEL_ASTRO.USERS` | All users. PK: `USER_ID`. Columns: `EMAIL_DOMAIN`, `STATUS`, `LOGINS_COUNT`, `LAST_LOGIN_TS`, `IS_DELETED`. **No full email stored. Join from SF_CONTACTS via `SF_CONTACTS.ASTRO_USER_ID = USERS.USER_ID`.** Filter `IS_DELETED = FALSE`. |
 | `MODEL_ASTRO.USER_ROLES` | User-org role bindings with `EMAIL_DOMAIN`, `ROLE`, `IS_ACTIVE` |
 | `MODEL_ASTRO.ORG_USERS` | User↔org membership with role |
 | `MODEL_ASTRO.ORGANIZATIONS` | Org entities keyed on `ORG_ID` |
 | `MODEL_ASTRO.DEPLOYMENTS` | All deployments |
 | `MODEL_ASTRO.TASK_RUNS` | **7.4B rows / 1TB** — always filter by date |
 | `MODEL_ASTRO.DAG_RUNS` | **1.5B rows** — always filter by date |
-| `MODEL_CRM.SF_CONTACTS` | Salesforce contacts. Has `ASTRO_USER_ID` link. No email column (privacy) — use Salesforce URL. Key columns: `CONTACT_URL`, `TITLE`, `PRIMARY_DOMAIN`, `LEAD_SCORE_GRADE`, `CONTACT_STATUS`, `IS_OPTED_OUT_OF_EMAIL`, `LAST_ACTIVITY_TS`, `LAST_MQL_DATE`, `LAST_VISITED_PRICING_PAGE_DATE`, `LAST_VISITED_DEBUGGING_AIRFLOW_PAGE_DATE`, `LAST_VISITED_DEBUGGING_DAGS_PAGE_DATE`. |
+| `MODEL_CRM.SF_CONTACTS` | Salesforce contacts. PK: `CONTACT_ID`. No email column (privacy) — use `CONTACT_URL`. Key columns: `ACCT_ID`, `ACCT_NAME`, `TITLE`, `PRIMARY_DOMAIN`, `CONTACT_STATUS`, `LEAD_SCORE_GRADE`, `SOURCE`, `IS_OPTED_OUT_OF_EMAIL`, `IS_ACTIVE_BILLING_CONTACT`, `IS_BILLING_CONTACT`, `IS_TRIAL_CONTACT`, `OWNER_NAME`, `LAST_ACTIVITY_TS`, `LAST_SALES_ACTIVITY_TS`, `FIRST_MQL_DATE`, `LAST_MQL_DATE`, `LAST_VISITED_PRICING_PAGE_DATE`, `LAST_VISITED_DEBUGGING_AIRFLOW_PAGE_DATE`, `LAST_VISITED_DEBUGGING_DAGS_PAGE_DATE`, `ASTRO_USER_ID` (→ `MODEL_ASTRO.USERS.USER_ID`), `ASTRO_ORG_ID`, `ZD_USER_ID`. Filter `IS_DELETED = FALSE AND IS_EMPLOYEE = FALSE`. |
 | `MODEL_CRM.SF_ACCOUNTS` | Salesforce accounts. Key columns: `ACCT_NAME`, `ACCT_ID`, `ACCT_DOMAIN`, `OWNER_NAME`, `SALES_TEAM` (Commercial/Enterprise/Strategic), `SALES_REGION`, `SEGMENT_PLANNED`, `TOTAL_ARR_AMT`, `SMOKE_SCORE`, `FIRE_SCORE`, `ACCT_SCORE`, `ACCT_SCORE_POSITIVE_DRIVERS`, `ACCT_SCORE_NEGATIVE_DRIVERS`, `ICP_DESIGNATION_V2`, `ACCT_HEALTH`, `IS_CURRENT_CUST`, `IS_CHURNED_CUST`, `CUSTOMER_SINCE_DATE`, `IS_CHURN_RISK`, `NEXT_RENEWAL_DATE`, `LAST_MQL_DATE`, `LAST_COSMOS_DOC_VIEW_DATE`, `LAST_DAG_FACTORY_DOWNLOAD_DATE`, `BILLING_COUNTRY`, `SHIPPING_COUNTRY`, `HG_AIRFLOW/DATABRICKS/MWAA` (boolean tech flags), `ZD_ORG_ID` (direct Zendesk org ID — shortcut for ZD lookups without MAPS join). **No IS_DELETED column** — filter `ACCT_TYPE NOT IN ('Internal','Competitor')`. |
 | `MODEL_CRM.SF_OPPS` | Opportunities. `OPP_TYPE`: New Business/Expansion/Renewal/Guided Trial/Churn/Downsell. Stages: `1-Discovery` → `2-QSO & Demo` → `3-EB Meeting` → `4-Tech Workshop/POV` → `5-Negotiate` → `7-Closed Won`/`8-Closed Lost`. Filter active: `IS_OPEN = TRUE`. Key columns: `AMT`, `INCREMENTAL_ARR_AMT`, `TOTAL_ACV`, `NEW_BUSINESS_ACV`, `CLOSE_DATE`, `CREATED_DATE`, `WON_DATE`, `LOST_DATE`, `OWNER_FORECAST_CATEGORY`, `NEXT_STEPS`, `IS_WON`, `IS_LOST`, `LOSS_REASON`, `LOSS_DETAILS`, `COMPETITION`, `CLOUD_PROVIDER`, `LEAD_SOURCE`, `DISCOVERY_MEETING_DATE`, `AIRFLOW_COMMITMENT`, `AIRFLOW_EXPERIENCE`, `CURRENT_AIRFLOW_DEPLOYMENT_MODEL`, `CURRENT_AIRFLOW_VERSIONS`, `CURRENT_AIRFLOW_ENVIRONMENTS_COUNT`. |
 | `MODEL_CRM.SF_MQLS` | MQL events. One row per MQL — contacts can have multiple. Key: `CONTACT_ID`, `ACCT_ID`, `MQL_TS`, `REPORTING_CHANNEL` (Webinar/Free Trial/Tradeshow/Paid Social/Paid Search/Field Event/etc), `ASSIGNED_AE_NAME`, `ASSIGNED_SDR_NAME`, `DISQUALIFICATION_REASON`. |
@@ -157,8 +158,10 @@ END_DATE     DATE       -- Period end
 | `MODEL_ASTRO.DEPLOYMENTS` | Deployment config. `EXECUTOR` (Celery/Astro/Kubernetes/Stellar), `SCHEDULER_SIZE` (small/medium/large), `CLUSTER_TYPE` (HOSTED/SHARED/BRING_YOUR_OWN_CLOUD), `AIRFLOW_VERSION`, `CLOUD_PROVIDER` (aws/gcp/azure), `IS_REMOTE_EXECUTION_ENABLED`, `HAS_CICD_ENFORCEMENT`. Filter `IS_DELETED = FALSE`. |
 | `MODEL_CONTRACTS.SF_CUST_CONTRACTS` | Contract terms per opp. `BASE_RATE`, `ON_DEMAND_RATE`, `RESERVED_CAPACITY`, `IS_ANNUAL`, `IS_M2M`, `ASTRO_ORG_ID`. Filter `IS_ACTIVE_CONTRACT = TRUE AND IS_LATEST = TRUE` for current terms. More granular than `ACCT_PRODUCT_ARR`. |
 | `MODEL_ECOSYSTEM.SCARF_COMPANY_ARTIFACT_EVENTS` | OSS download signals by company domain. `COMPANY_NAME`, `COMPANY_DOMAIN`, `ARTIFACT_NAME`, `EVENT_COUNT`, `IS_COSMOS_DOCS_PAGE_VIEW`, `IS_DAG_FACTORY_DOWNLOAD`. No direct SF join — match via domain → `SF_ACCOUNT_DOMAINS`. Good for prospecting. |
-| `MODEL_EDU.SKILLJAR_COURSE_PROGRESS` | Training completion. `STUDENT_ID`, `COURSE_NAME`, `IS_COMPLETED`, `IS_CERTIFICATION`, `DAYS_TO_COMPLETE`. Good for onboarding health. |
+| `MODEL_EDU.SKILLJAR_COURSE_PROGRESS` | Training completion. `STUDENT_ID`, `COURSE_NAME`, `IS_COMPLETED`, `IS_CERTIFICATION`, `DAYS_TO_COMPLETE`, `COMPLETED_AT_TS`. Good for onboarding health. Join to `SKILLJAR_STUDENTS` on `STUDENT_ID`. |
+| `MODEL_EDU.SKILLJAR_STUDENTS` | Skilljar user registry. `STUDENT_ID`, `EMAIL_DOMAIN`, `IS_EMPLOYEE`. **No individual contact ID — only domain-level linkage to SF contacts.** Filter `IS_EMPLOYEE = FALSE`. |
 | `MODEL_SNOWFLAKE.SNOWFLAKE_CURRENT_TABLES` | **Schema discovery tool.** `TABLE_FQID`, `TABLE_SIZE_GB`, `IS_STALE`, `PRIMARY_KEY`, `FOREIGN_KEY`. Query before running against unknown large tables. |
+| `GTM.PUBLIC.CONTACT_360_V` | **Unified contact view** — SF contacts + product user status + MQL history + domain-level Skilljar training. Columns: `CONTACT_ID`, `ACCT_ID`, `ACCT_NAME`, `TITLE`, `CONTACT_URL`, `PRIMARY_DOMAIN`, `CONTACT_STATUS`, `LEAD_SCORE_GRADE`, `IS_OPTED_OUT_OF_EMAIL`, `IS_ACTIVE_BILLING_CONTACT`, `IS_PRODUCT_USER`, `PRODUCT_STATUS`, `LOGINS_COUNT`, `LAST_LOGIN_TS`, `MQL_COUNT`, `LAST_MQL_TS`, `LAST_MQL_CHANNEL`, `LAST_ASSIGNED_AE`, `DOMAIN_COURSES_COMPLETED`, `DOMAIN_HAS_CERTIFICATION`. Filter by `ACCT_ID` or `ACCT_NAME ILIKE`. No joins needed. Created 2026-04-08. **Note:** Gong sentiment not joinable here (no name column in SF_CONTACTS) — use `CONTACT_SENTIMENT_V` separately. |
 | `GTM.PUBLIC.CONTACT_SENTIMENT_V` | Pre-built Gong sentiment view. Columns: `contact_name`, `ACCT_NAME`, `avg_sentiment`, `call_count`, `contact_role` (Champion/Skeptic/At Risk), `sentiment_direction`. Use for rep-level contact health — no joins needed. Note: `GTM.GONG.*` tables do NOT exist; only `GTM.PUBLIC.*` views are accessible. |
 | `GTM.PUBLIC.GONG_CALL_ENRICHMENTS_V` | Cortex-enriched Gong call view. Columns: `CALL_ID`, `ACCT_ID`, `ACCT_NAME`, `CALL_DATE`, `SENTIMENT_SCORE`, `DEAL_RISK`, `TECH_STACK`, `PAIN_POINTS`, `COMPETITORS`, `AIRFLOW_TOPICS`. Join to `HQ.MODEL_CRM_SENSITIVE.GONG_CALLS` on `CALL_ID` to get `CALL_TITLE`, `CALL_URL`, `CALL_BRIEF`, `CALL_NEXT_STEPS`, `PRIMARY_EMPLOYEE`, `CALL_DURATION`. Filter by `ACCT_ID` for account-scoped lookups. |
 | `GTM.PUBLIC.ZD_TICKET_ENRICHMENTS_V` | Cortex-enriched Zendesk ticket view. Columns: `TICKET_ID`, `ACCT_ID`, `TICKET_DATE`, `PRIORITY`, `STATUS`, `SENTIMENT_SCORE`, `ISSUE_CATEGORY`, `URGENCY_SIGNAL`, `KEY_PHRASES`, `PRODUCT_AREA`. Filter by `ACCT_ID` (SF account ID). No joins needed for account-level ticket summaries. |
@@ -191,6 +194,14 @@ END_DATE     DATE       -- Period end
 
 Use this before writing any query. Pick the first table that satisfies the question.
 
+**"Give me a full account snapshot / everything about this account"**
+→ `GTM.PUBLIC.ACCOUNT_360_V` — single query, one row per account, all signals pre-joined  
+→ Returns: ARR, usage, contract, Gong sentiment, deal risk, ZD tickets, contact count, LF visits, research tier
+
+**"What's the history / what have we discussed with this account? / What notes exist?"**
+→ `GTM.PUBLIC.ACCOUNT_NOTES` — filter by `ACCT_ID`, `ORDER BY NOTE_DATE DESC LIMIT 20`  
+→ Types: `interaction` (ad-hoc conversations), `prep_brief` (pre-call briefs), `email_draft`, `call_brief`, `ad_hoc`
+
 **"What's the current state of an account?"**
 → `MART_CUST.CURRENT_ASTRO_CUSTS` (ARR, usage, credit balance, health, contract dates, team)
 
@@ -207,18 +218,21 @@ Use this before writing any query. Pick the first table that satisfies the quest
 → Usage vs contract: `MODEL_FINANCE.METRONOME_USAGE_DAILY` (filter `IS_LATEST = TRUE`)  
 → Invoices: `MODEL_FINANCE.METRONOME_INVOICES` (filter `IS_FINALIZED = TRUE AND IS_VOIDED = FALSE`)
 
+**"Who are the contacts for an account? (titles, MQL history, product status, training)"**
+→ `GTM.PUBLIC.CONTACT_360_V` — filter by `ACCT_ID` or `ACCT_NAME ILIKE`, no joins needed  
+→ Fallback for raw product users: `IN_ASTRO_DB_PROD.ORG_USER_RELATION` + `MODEL_ASTRO.USERS`
+
 **"Who are the users on this account?"**
-→ `IN_ASTRO_DB_PROD.ORG_USER_RELATION` + `MODEL_ASTRO.USERS` (for email domain)  
-→ Then `MODEL_CRM.SF_CONTACTS` if you need title/SF URL (join on `ASTRO_USER_ID`)
+→ `GTM.PUBLIC.CONTACT_360_V` (preferred — includes product status, MQL, training in one query)  
+→ Or: `IN_ASTRO_DB_PROD.ORG_USER_RELATION` + `MODEL_ASTRO.USERS` + `SF_CONTACTS` (3-table join, use only if you need raw product user data not in CONTACT_360_V)
 
 **"What's happening in Gong / what was discussed?"**
-→ `MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS` JOIN `GONG_CALLS` on `CALL_ID`  
-→ Always filter `GONG_CALLS.IS_DELETED = FALSE`  
-→ Search by `ACCT_NAME ILIKE '%name%'` — no account ID join needed
+→ For enriched summary (sentiment, deal risk, tech stack): `GTM.PUBLIC.GONG_CALL_ENRICHMENTS_V` filter by `ACCT_ID`, JOIN `GONG_CALLS` on `CALL_ID` for title/URL/brief  
+→ For full transcripts: `MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS` JOIN `GONG_CALLS` on `CALL_ID`, filter `IS_DELETED = FALSE`
 
 **"What support tickets does this account have?"**
-→ `MODEL_SUPPORT.ZD_TICKETS` — but ZD_ORG_ID ≠ Astro ORG_ID  
-→ Bridge: `ZD_TICKETS.ORG_ID → MAPS.ZD_ORGS.ZD_ORG_ID → ACCT_ID`
+→ For enriched summary (sentiment, urgency, category): `GTM.PUBLIC.ZD_TICKET_ENRICHMENTS_V` filter by `ACCT_ID` — no joins needed  
+→ For raw tickets: `MODEL_SUPPORT.ZD_TICKETS` — bridge via `ZD_TICKETS.ORG_ID → MAPS.ZD_ORGS.ZD_ORG_ID → ACCT_ID` (or use `SF_ACCOUNTS.ZD_ORG_ID` shortcut)
 
 **"What's in the open sales pipeline?"**
 → `MODEL_CRM.SF_OPPS` with `IS_OPEN = TRUE`  
@@ -317,9 +331,19 @@ How stale can data be when you query it? Use this to set expectations and caveat
 
 ### Pattern 1: Account name → any metric (most common)
 
-Always resolve account name to `ORG_ID` first in a CTE, then join:
+**For accounts in the ID cache above: skip the CTE — use `ORG_ID` directly.**
+
+For unknown accounts, resolve via CTE first:
 
 ```sql
+-- Known account (use ID cache): skip CTE entirely
+SELECT DATE, TOTAL_COST
+FROM HQ.METRICS_FINANCE.ORG_COST_MULTI
+WHERE ORG_ID = 'cl6e1hc82009l0s0ebuei60ec'  -- Third Point
+  AND TIME_GRAIN = 'day'
+  AND DATE = CURRENT_DATE - 1
+
+-- Unknown account: resolve via CTE
 WITH acct AS (
     SELECT ORG_ID, METRONOME_ID, ACCT_NAME
     FROM HQ.MART_CUST.CURRENT_ASTRO_CUSTS
@@ -332,27 +356,36 @@ WHERE m.TIME_GRAIN = 'day'
   AND m.DATE = CURRENT_DATE - 1
 ```
 
-### Pattern 2: Users for an account
+### Pattern 2: Contacts for an account (preferred — use CONTACT_360_V)
 
 ```sql
+-- Preferred: single query, all sources joined
+SELECT CONTACT_ID, TITLE, CONTACT_URL, PRIMARY_DOMAIN,
+       IS_PRODUCT_USER, PRODUCT_STATUS, LOGINS_COUNT, LAST_LOGIN_TS,
+       MQL_COUNT, LAST_MQL_TS, LAST_MQL_CHANNEL,
+       DOMAIN_COURSES_COMPLETED, DOMAIN_HAS_CERTIFICATION
+FROM GTM.PUBLIC.CONTACT_360_V
+WHERE ACCT_NAME ILIKE '%CUSTOMER_NAME%'
+ORDER BY IS_PRODUCT_USER DESC, MQL_COUNT DESC
+```
+
+For raw product users only (when CONTACT_360_V is overkill):
+```sql
+-- Join key: SF_CONTACTS.ASTRO_USER_ID = MODEL_ASTRO.USERS.USER_ID
 WITH acct AS (
     SELECT ORG_ID FROM HQ.MART_CUST.CURRENT_ASTRO_CUSTS
     WHERE UPPER(ACCT_NAME) LIKE '%CUSTOMER_NAME%'
 )
 SELECT DISTINCT
-    ou.USER_ID, ou.ROLE,
-    u.EMAIL_DOMAIN, u.STATUS
+    ou.USER_ID, ou.ROLE, u.EMAIL_DOMAIN, u.STATUS,
+    c.CONTACT_URL, c.TITLE
 FROM HQ.IN_ASTRO_DB_PROD.ORG_USER_RELATION ou
 JOIN HQ.MODEL_ASTRO.USERS u ON ou.USER_ID = u.USER_ID
+LEFT JOIN HQ.MODEL_CRM.SF_CONTACTS c
+    ON c.ASTRO_USER_ID = u.USER_ID
+    AND c.IS_DELETED = FALSE
 JOIN acct a ON ou.ORGANIZATION_ID = a.ORG_ID
-```
-
-For Salesforce contact info (title, URL to get emails):
-```sql
-SELECT c.CONTACT_URL, c.TITLE, c.PRIMARY_DOMAIN, c.ASTRO_USER_ID
-FROM HQ.MODEL_CRM.SF_CONTACTS c
-WHERE c.ASTRO_USER_ID IN (<user_ids>)
-  AND c.IS_DELETED = FALSE
+WHERE ou.DELETED_AT IS NULL
 ```
 
 ### Pattern 3: Multi-period cost comparison
@@ -467,6 +500,81 @@ WHERE OWNER_NAME ILIKE '%kenney%'
 ORDER BY CLOSE_DATE
 ```
 
+### Pattern 11: Domain-based contact/account fallback
+
+Use when you have an email domain but no direct SF link (e.g., product users not yet in Salesforce):
+
+```sql
+-- Domain → account
+SELECT ACCT_ID, EMAIL_DOMAIN
+FROM HQ.MODEL_CRM.SF_ACCOUNT_DOMAINS
+WHERE EMAIL_DOMAIN = 'example.com'
+  AND IS_UNIQUE_DOMAIN = TRUE  -- exclude shared domains (gmail.com etc.)
+
+-- Domain → all SF contacts at that account
+SELECT c.CONTACT_ID, c.TITLE, c.CONTACT_URL, c.PRIMARY_DOMAIN
+FROM HQ.MODEL_CRM.SF_CONTACTS c
+JOIN HQ.MODEL_CRM.SF_ACCOUNT_DOMAINS d
+    ON c.PRIMARY_DOMAIN = d.EMAIL_DOMAIN
+WHERE d.EMAIL_DOMAIN = 'example.com'
+  AND d.IS_UNIQUE_DOMAIN = TRUE
+  AND c.IS_DELETED = FALSE
+  AND c.IS_EMPLOYEE = FALSE
+```
+
+### Pattern 12: Gong enrichment with call detail
+
+Preferred pattern for account call research — enrichment view first, then join for full metadata:
+
+```sql
+SELECT
+    e.CALL_DATE, e.SENTIMENT_SCORE, e.DEAL_RISK,
+    e.TECH_STACK, e.PAIN_POINTS, e.COMPETITORS, e.AIRFLOW_TOPICS,
+    c.CALL_TITLE, c.CALL_URL, c.CALL_BRIEF, c.CALL_NEXT_STEPS,
+    c.PRIMARY_EMPLOYEE, c.CALL_DURATION
+FROM GTM.PUBLIC.GONG_CALL_ENRICHMENTS_V e
+JOIN HQ.MODEL_CRM_SENSITIVE.GONG_CALLS c ON e.CALL_ID = c.CALL_ID
+WHERE e.ACCT_ID = '<acct_id>'
+  AND c.IS_DELETED = FALSE
+ORDER BY e.CALL_DATE DESC
+```
+
+---
+
+### Pattern 13: Full account 360 snapshot (single query)
+
+Single-row account context — joins CURRENT_ASTRO_CUSTS with Gong, ZD, contacts, LF visits, and research:
+
+```sql
+SELECT ACCT_NAME, TOTAL_ARR_AMT, USAGE_AMT_30D, CREDIT_BALANCE,
+       CONTRACT_END_DATE, DAYS_TO_RENEWAL, USAGE_VS_CONTRACT_TARGET_PCT_30D,
+       LAST_CALL_DATE, LAST_GONG_SENTIMENT, LAST_DEAL_RISK, LAST_PAIN_POINTS, CALL_COUNT_90D,
+       OPEN_TICKET_COUNT, P1_OPEN_COUNT, LAST_TICKET_DATE,
+       CONTACT_COUNT, PRODUCT_USER_COUNT, DOMAIN_HAS_CERTIFICATION,
+       VISITS_30D, LAST_VISIT_DATE,
+       RESEARCH_SCORE, RESEARCH_TIER, KEY_SIGNALS
+FROM GTM.PUBLIC.ACCOUNT_360_V
+WHERE ACCT_NAME ILIKE '%account_name%'
+```
+
+For ID-cache accounts, use `WHERE ACCT_ID = '<acct_id>'` (faster).
+
+---
+
+### Pattern 14: Account history / interaction notes
+
+All Claude-generated and cron-generated notes for an account, newest first:
+
+```sql
+SELECT NOTE_DATE, NOTE_TYPE, SOURCE, CONTENT
+FROM GTM.PUBLIC.ACCOUNT_NOTES
+WHERE ACCT_ID = '<acct_id>'
+ORDER BY NOTE_DATE DESC, CREATED_AT DESC
+LIMIT 20
+```
+
+Filter by note type: `AND NOTE_TYPE IN ('interaction', 'prep_brief', 'call_brief', 'email_draft', 'ad_hoc')`
+
 ---
 
 ## Optimization Rules
@@ -502,6 +610,8 @@ ORDER BY CLOSE_DATE
 15. **`METRONOME_COMPUTE_EVENTS` has no cost column**: Must join to `METRONOME_RATE_CARD_ITEMS` on `PRICING_GROUP_OBJECT_HASH` and compute `COMPUTE_RUNTIME_SECONDS / 3600 * UNIT_PRICE`. Always scope `RATE_CARD_ITEMS` to the customer's specific `RATE_CARD_ID` first — otherwise you pull prices from other rate cards. Use `ASTRO_ORG_ID` (not `ORGANIZATION_ID`) to filter. `METRONOME_RATE_CARD_ITEMS` has a `PRICING_GROUP_OBJECT_DEFINITION` column — use `LIKE '%small%'` (or the desired scheduler size) to filter to specific rates without JSON parsing. `METRONOME_DEPLOYMENT_EVENTS` has both `EVENT_TS` and `START_TIMESTAMP` date columns — both work for date range filtering. `DEPLOYMENT_COST_MULTI` can be filtered by `METRONOME_ID` in addition to `ORG_ID`. **Always add `IS_COMPOSITE = FALSE`** when querying `METRONOME_RATE_CARD_ITEMS` for per-unit prices — composite rows are bundled rollups and will inflate results.
 
 16. **`DEPLOYMENT_OPERATOR_ACTIVITY_MULTI` requires `TIME_GRAIN = 'day'`**: The table stores day, roll_7d, roll_30d, and week rows for every period. Omitting this filter inflates counts by 40–50x. **Always include `TIME_GRAIN = 'day'` (or the intended grain explicitly).**
+
+17. **Prefer GTM enrichment views over raw joins for Gong/ZD/contacts**: `GTM.PUBLIC.GONG_CALL_ENRICHMENTS_V`, `ZD_TICKET_ENRICHMENTS_V`, `CONTACT_360_V`, and `CONTACT_SENTIMENT_V` replace 3–5 manual join steps each. Always check the Decision Tree — if a GTM view covers the question, use it first. Fall back to raw `GONG_CALL_TRANSCRIPTS` / `ZD_TICKETS` / `SF_CONTACTS` only when you need data not in the views (e.g. full transcript text, raw ticket comments).
 
 ---
 
@@ -730,4 +840,14 @@ Each entry captures a query pattern that was used successfully or a correction t
 - Three new `MODEL_FINANCE` tables added to schema: `METRONOME_RATE_CARDS` (columns: `RATE_CARD_NAME`, `PLAN_TYPE`, `SUPPORT_LEVEL`, `IS_UPLIFTED`, `AVG_UPLIFT_PCT`), `METRONOME_RATE_CARD_ITEMS` (full column set confirmed — add `IS_COMPOSITE = FALSE` filter when querying per-unit prices; composite rows are bundles), `METRONOME_PRODUCTS` (schema undiscovered — use `SELECT * LIMIT 50`)
 - `METRONOME_RATE_CARD_ITEM_UPLIFT_LOG`: `RATE_CARD_NAME` is NOT a valid column (confirmed query error); valid columns are `SUPPORT_LEVEL`, `PRODUCT_ITEM_NAME`, `UPLIFT_PCT`, `UNIT_PRICE`, `START_TS`, `END_TS`
 - Prospect research cron confirmed running clean across 9 accounts: `SF_ACCOUNTS ILIKE` → `ACCT_ID` → `GONG_CALLS WHERE ACCT_ID = '...' AND IS_DELETED = FALSE ORDER BY CALL_START_TS DESC`; all sub-0.7s; this metadata-only pattern (no transcript join) is the right first step before deciding whether to fetch full transcripts
+**2026-04-08 (optimization session)** — Schema/linkage optimization pass. Key changes:
+- `GTM.PUBLIC.CONTACT_360_V` created: unified contact view joining `SF_CONTACTS` + `MODEL_ASTRO.USERS` (via `SF_CONTACTS.ASTRO_USER_ID = USERS.USER_ID`) + `SF_MQLS` (via `CONTACT_ID`) + `SKILLJAR_STUDENTS/COURSE_PROGRESS` (domain-level only — no individual ID link exists). Created with `GTMUSER` role via Python connector (MCP tool doesn't persist `USE ROLE` across calls; personal databases don't support views).
+- `MODEL_ASTRO.USERS` full schema confirmed: `USER_ID` (PK), `EMAIL_DOMAIN`, `STATUS`, `LOGINS_COUNT`, `LAST_LOGIN_TS`, `IS_DELETED`. No `ASTRO_USER_ID` column — join from SF_CONTACTS using `SF_CONTACTS.ASTRO_USER_ID = USERS.USER_ID`.
+- `MODEL_CRM.SF_CONTACTS` full schema confirmed: `CONTACT_ID` (PK/TEXT), `ACCT_ID`, `ACCT_NAME`, `ASTRO_ORG_ID`, `ZD_USER_ID` (new columns vs prior doc). `IS_EMPLOYEE` filter needed — view excludes internal contacts.
+- `MODEL_EDU.SKILLJAR_STUDENTS` confirmed: `STUDENT_ID`, `EMAIL_DOMAIN`, `IS_EMPLOYEE` only — no contact-level ID link to SF. Domain-level aggregation is the only join path.
+- Decision tree updated: `CONTACT_360_V` is now the first-choice for contact queries; GTM enrichment views (`GONG_CALL_ENRICHMENTS_V`, `ZD_TICKET_ENRICHMENTS_V`) are first-choice for Gong/ZD context.
+- Pattern 1 updated to show direct `ORG_ID` usage for ID-cache accounts vs CTE for unknown accounts.
+- Pattern 2 rewritten: `CONTACT_360_V` as preferred, raw 3-table join as fallback. Correct join key documented: `SF_CONTACTS.ASTRO_USER_ID = MODEL_ASTRO.USERS.USER_ID`.
+- Patterns 11 (domain fallback) and 12 (Gong enrichment + call detail) added.
+- Optimization Rule 17 added: GTM views first, raw tables only when views don't cover the need.
 <!-- PATTERNS_LOG_END -->
