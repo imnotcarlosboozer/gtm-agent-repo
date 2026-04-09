@@ -613,6 +613,8 @@ Filter by note type: `AND NOTE_TYPE IN ('interaction', 'prep_brief', 'call_brief
 
 17. **Prefer GTM enrichment views over raw joins for Gong/ZD/contacts**: `GTM.PUBLIC.GONG_CALL_ENRICHMENTS_V`, `ZD_TICKET_ENRICHMENTS_V`, `CONTACT_360_V`, and `CONTACT_SENTIMENT_V` replace 3–5 manual join steps each. Always check the Decision Tree — if a GTM view covers the question, use it first. Fall back to raw `GONG_CALL_TRANSCRIPTS` / `ZD_TICKETS` / `SF_CONTACTS` only when you need data not in the views (e.g. full transcript text, raw ticket comments).
 
+18. **Push account filter into every CTE in multi-CTE scorecards**: When building a scorecard or report across multiple enrichment views, always pre-filter inside each CTE — add `WHERE ACCT_ID IN (SELECT ACCT_ID FROM my_accounts)` before any `GROUP BY`. Never let a GTM view (`GONG_CALL_ENRICHMENTS_V`, `ZD_TICKET_ENRICHMENTS_V`, etc.) scan all accounts to then join down to a 47-account book-of-business. Omitting this filter caused a 2.87GB scan (vs ~5–10MB expected). `ZD_TICKET_ENRICHMENTS_V` already has `ACCT_ID` — filter it directly, no `MAPS.ZD_ORGS` bridge needed.
+
 ---
 
 ## CURRENT_ASTRO_CUSTS Column Reference
@@ -850,4 +852,8 @@ Each entry captures a query pattern that was used successfully or a correction t
 - Pattern 2 rewritten: `CONTACT_360_V` as preferred, raw 3-table join as fallback. Correct join key documented: `SF_CONTACTS.ASTRO_USER_ID = MODEL_ASTRO.USERS.USER_ID`.
 - Patterns 11 (domain fallback) and 12 (Gong enrichment + call detail) added.
 - Optimization Rule 17 added: GTM views first, raw tables only when views don't cover the need.
+**2026-04-09** — 49 queries observed (cache warming cron + ad-hoc risk scorecard):
+- Cache warming ran at 8:25pm UTC: 47 `ACCOUNT_360_V` queries at ~500-760ms (~120MB each); all 22 subsequent `ACCOUNT_NOTES` prefetch queries hit result cache (BYTES_SCANNED=0, 47-105ms) — cron is healthy
+- Risk scorecard query scanned 2.87GB in 2.5s because `GONG_CALL_ENRICHMENTS_V` and `ZD_TICKET_ENRICHMENTS_V` were grouped across ALL accounts before joining to `my_accounts` (~47 accounts). Fix: add `WHERE ACCT_ID IN (SELECT ACCT_ID FROM my_accounts)` inside each enrichment CTE to pre-filter before grouping — pushes pruning before the full-view scan
+- Buggy join pattern found in ZD enrichment CTE: `JOIN MAPS.ZD_ORGS zo ON zo.ZD_ORG_ID = t.TICKET_ID` — `TICKET_ID` is a ticket primary key, not a ZD org ID, so this join returns nothing. `ZD_TICKET_ENRICHMENTS_V` already has `ACCT_ID` — filter directly with `WHERE t.ACCT_ID = a.ACCT_ID`, no MAPS bridge needed
 <!-- PATTERNS_LOG_END -->
