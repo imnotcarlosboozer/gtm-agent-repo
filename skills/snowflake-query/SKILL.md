@@ -119,9 +119,9 @@ END_DATE     DATE       -- Period end
 | Table | Grain key | Best for |
 |---|---|---|
 | `METRICS_FINANCE.ORG_COST_MULTI` | `ORG_ID` | Per-org daily/weekly/monthly spend |
-| `METRICS_FINANCE.DEPLOYMENT_COST_MULTI` | `DEPLOYMENT_ID`, `ORG_ID` | Per-deployment cost breakdown |
+| `METRICS_FINANCE.DEPLOYMENT_COST_MULTI` | `DEPLOYMENT_ID`, `ORG_ID` | Per-deployment cost breakdown. Cost columns: `TOTAL_DEPLOYMENT_COST` (scheduler), `TOTAL_COST` (all-in), `A5_WORKER_COST`, `A20_WORKER_COST`. Runtime columns: `A5_WORKER_RUNTIME_SECONDS`, `A20_WORKER_RUNTIME_SECONDS`, `TOTAL_DEPLOYMENT_RUNTIME_SECONDS`. Add-on columns: `TOTAL_EPHEMERAL_STORAGE_COST`, `TOTAL_REMOTE_EXECUTION_COST`, `TOTAL_OBSERVE_COST`. Filter `DEPLOYMENT_ID != 'no_deployment_id'` to exclude unassigned rows. |
 | `METRICS_FINANCE.DEPLOYMENT_REGION_COST_MULTI` | `DEPLOYMENT_ID`, `ORG_ID` | Cost by cloud region |
-| `METRICS_FINANCE.WORKER_QUEUE_COST_MULTI` | `WORKER_QUEUE_ID`, `ORG_ID` | Worker queue cost |
+| `METRICS_FINANCE.WORKER_QUEUE_COST_MULTI` | `WORKER_QUEUE_ID`, `ORG_ID`, `DEPLOYMENT_ID` | Worker queue cost. GPU runtime columns: `A5_WORKER_RUNTIME_SECONDS`, `A10_WORKER_RUNTIME_SECONDS`, `A20_WORKER_RUNTIME_SECONDS`, `TOTAL_COST`. Use instead of `DEPLOYMENT_COST_MULTI` when you need per-queue GPU hour breakdowns. |
 | `METRICS_FINANCE.CLUSTER_COST_MULTI` | `CLUSTER_ID`, `ORG_ID` | Cluster cost |
 | `METRICS_FINANCE.METRONOME_USAGE_MULTI` | `METRONOME_ID` | Credit usage vs contract |
 | `METRICS_FINANCE.METRONOME_REVENUE_DAILY` | `METRONOME_ID` | Daily revenue |
@@ -196,11 +196,13 @@ Use this before writing any query. Pick the first table that satisfies the quest
 
 **"Give me a full account snapshot / everything about this account"**
 → `GTM.PUBLIC.ACCOUNT_360_V` — single query, one row per account, all signals pre-joined  
-→ Returns: ARR, usage, contract, Gong sentiment, deal risk, ZD tickets, contact count, LF visits, research tier
+→ Returns: ARR, usage, contract, Gong sentiment, deal risk, ZD tickets, contact count, LF visits, research tier  
+→ ⚠️ Column names use `ACCT_*` pattern — NOT `ACCOUNT_*`: use `ACCT_NAME`, `ACCT_ID`, `TOTAL_ARR_AMT`. `ACCOUNT_NAME`/`SF_ACCT_ID`/`ARR`/`STAGE`/`OWNER` are NOT valid columns (silent error, 0 rows)
 
 **"What's the history / what have we discussed with this account? / What notes exist?"**
 → `GTM.PUBLIC.ACCOUNT_NOTES` — filter by `ACCT_ID`, `ORDER BY NOTE_DATE DESC LIMIT 20`  
-→ Types: `interaction` (ad-hoc conversations), `prep_brief` (pre-call briefs), `email_draft`, `call_brief`, `ad_hoc`
+→ Types: `interaction` (ad-hoc conversations), `prep_brief` (pre-call briefs), `email_draft`, `call_brief`, `ad_hoc`  
+→ ⚠️ Filter column is `ACCT_ID` only — `ACCOUNT_NAME` and `ACCT_NAME` are NOT valid columns in this table (silent failure, 0 rows, 0 bytes scanned)
 
 **"What's the current state of an account?"**
 → `MART_CUST.CURRENT_ASTRO_CUSTS` (ARR, usage, credit balance, health, contract dates, team)
@@ -568,7 +570,7 @@ All Claude-generated and cron-generated notes for an account, newest first:
 ```sql
 SELECT NOTE_DATE, NOTE_TYPE, SOURCE, CONTENT
 FROM GTM.PUBLIC.ACCOUNT_NOTES
-WHERE ACCT_ID = '<acct_id>'
+WHERE ACCT_ID = '<acct_id>'   -- ACCT_ID only; ACCOUNT_NAME / ACCT_NAME are not valid columns here
 ORDER BY NOTE_DATE DESC, CREATED_AT DESC
 LIMIT 20
 ```
@@ -856,4 +858,8 @@ Each entry captures a query pattern that was used successfully or a correction t
 - Cache warming ran at 8:25pm UTC: 47 `ACCOUNT_360_V` queries at ~500-760ms (~120MB each); all 22 subsequent `ACCOUNT_NOTES` prefetch queries hit result cache (BYTES_SCANNED=0, 47-105ms) — cron is healthy
 - Risk scorecard query scanned 2.87GB in 2.5s because `GONG_CALL_ENRICHMENTS_V` and `ZD_TICKET_ENRICHMENTS_V` were grouped across ALL accounts before joining to `my_accounts` (~47 accounts). Fix: add `WHERE ACCT_ID IN (SELECT ACCT_ID FROM my_accounts)` inside each enrichment CTE to pre-filter before grouping — pushes pruning before the full-view scan
 - Buggy join pattern found in ZD enrichment CTE: `JOIN MAPS.ZD_ORGS zo ON zo.ZD_ORG_ID = t.TICKET_ID` — `TICKET_ID` is a ticket primary key, not a ZD org ID, so this join returns nothing. `ZD_TICKET_ENRICHMENTS_V` already has `ACCT_ID` — filter directly with `WHERE t.ACCT_ID = a.ACCT_ID`, no MAPS bridge needed
+**2026-04-10** — 42 queries observed (account research session + cost analysis for unknown account `clvy14mjc05dr01n2q5s01tlv`):
+- `DEPLOYMENT_COST_MULTI` confirmed new columns: `A5_WORKER_COST`, `A20_WORKER_COST`, `A5_WORKER_RUNTIME_SECONDS`, `A20_WORKER_RUNTIME_SECONDS`, `TOTAL_DEPLOYMENT_RUNTIME_SECONDS`, `TOTAL_EPHEMERAL_STORAGE_COST`, `TOTAL_REMOTE_EXECUTION_COST`, `TOTAL_OBSERVE_COST` — all usable for GPU/RE cost breakdown. Add `DEPLOYMENT_ID != 'no_deployment_id'` filter to exclude unassigned rows.
+- `WORKER_QUEUE_COST_MULTI` confirmed columns: `A5/A10/A20_WORKER_RUNTIME_SECONDS`, `TOTAL_COST`, `DEPLOYMENT_ID` — use for per-queue GPU hour breakdowns when `DEPLOYMENT_COST_MULTI` isn't granular enough.
+- `GTM.PUBLIC.ACCOUNT_NOTES` and `ACCOUNT_360_V` have no `ACCOUNT_NAME` column — two queries silently failed (0 bytes, 0 rows) trying `WHERE LOWER(n.ACCOUNT_NAME) LIKE ...`; a third tried `ACCOUNT_NAME, SF_ACCT_ID, ARR, STAGE, OWNER` on `ACCOUNT_360_V` (also wrong). Correct: `ACCOUNT_NOTES` uses `ACCT_ID` filter only; `ACCOUNT_360_V` columns follow `ACCT_*` naming (`ACCT_NAME`, `ACCT_ID`, `TOTAL_ARR_AMT`). Wrong column names trigger silent errors — no exception, just 0 rows returned, forcing a 129MB `SELECT * LIMIT 1` probe.
 <!-- PATTERNS_LOG_END -->
