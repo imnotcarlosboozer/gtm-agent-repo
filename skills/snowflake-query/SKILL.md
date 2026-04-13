@@ -147,7 +147,7 @@ END_DATE     DATE       -- Period end
 | `MODEL_CRM.SF_USERS` | SF users (reps, CSMs, FEs). `IS_ACTIVE`, `IS_ACCT_EXEC`. `ROLE` examples: `Commercial Sales (AE)`, `Enterprise Sales (AE) - East (Ritchie)`, `Field Engineer - Enterprise`, `CSM`. `SEGMENT`: Commercial/Enterprise/Enterprise+. |
 | `MODEL_CRM.SF_RENEWALS` | Renewal opp summary. `ATR_AMT`, `RENEWAL_AMT`, `RENEWAL_OUTCOME`, `ATR_DATE`, `IS_PRODUCT_TRANSITION`. |
 | `MODEL_CRM.SF_ASTRO_ORGS` | Maps `ORG_ID` → `ACCT_ID`. Also has `METRONOME_ID` — the bridge between product/billing and CRM. Rich trial/product context: `ASTRO_ORG_STATE`, `FREE_TRIAL_START_DATE`, `TRIAL_EXPIRED_DATE`, `IS_GUIDED_TRIAL_ORG`, `TRIAL_REASON`, `AIRFLOW_COMMITMENT`, `AIRFLOW_PAIN`, `PROPENSITY_TO_PURCHASE`, `DEPLOYMENT_CREATED_DATE`, `FIRST_CODE_PUSH_DATE`, `FIRST_TASK_SUCCESS_DATE`, `FIRST_NON_EXAMPLE_DAG_DATE`, `CLICKED_INSTALL_CLI_BUTTON_DATE`, `ADDED_PAYMENT_METHOD_DATE`, `ASTRO_FREE_TRIAL_CREDIT_USAGE`, `ASTRO_FREE_TRIAL_CREDITS_ISSUED`, `FIRST_VIEWED_PRICING_PAGE_DATE`, `ASTRO_PLAN_UPGRADE_REQUEST`, `SF_RECORD_URL`. Useful for prospect product engagement context. |
-| `MODEL_CRM.LF_WEBSITE_VISITS` | Leadfeeder web visits. **FK is `SF_ACCT_ID` (not `ACCT_ID`)** — join to SF_ACCOUNTS on `SF_ACCT_ID = ACCT_ID`. Columns: `VISIT_TS`, `LANDING_PAGE`, `PAGE_VIEW_COUNT`, `SOURCE`, `MEDIUM`, `REFERRER`. |
+| `MODEL_CRM.LF_WEBSITE_VISITS` | Leadfeeder web visits. **FK is `SF_ACCT_ID` (not `ACCT_ID`)** — join to SF_ACCOUNTS on `SF_ACCT_ID = ACCT_ID`. Columns: `LF_VISIT_ID`, `VISIT_TS`, `VISIT_DURATION`, `LANDING_PAGE`, `PAGE_VIEW_COUNT`, `SOURCE`, `MEDIUM`, `CAMPAIGN_NAME`, `REFERRER`. Join to `LF_PAGE_VIEWS` on `LF_VISIT_ID` for page-level detail. |
 | `MODEL_CRM_SENSITIVE.GONG_CALL_TRANSCRIPTS` | Gong transcript text. Key columns: `CALL_ID`, `ACCT_ID` (SF account ID — useful for rep-scoped joins), `ACCT_NAME`, `CALL_TITLE`, `CALL_URL`, `SCHEDULED_TS`, `OPP_NAME`, `CALL_BRIEF`, `CALL_NEXT_STEPS`, `ATTENDEES`, `FULL_TRANSCRIPT`. Join to `GONG_CALLS` on `CALL_ID`. **Prefer `ACCT_NAME ILIKE` for single-account lookups; use `ACCT_ID IN (...)` or join to `SF_ACCOUNTS` for rep book-of-business scoping.** |
 | `MODEL_CRM_SENSITIVE.GONG_CALLS` | Gong call metadata. Key columns: `CALL_ID`, `ACCT_ID`, `IS_DELETED`, `OPP_STAGE_AT_CALL`, `CALL_DURATION`, `CALL_START_TS`, `PRIMARY_EMPLOYEE`, `EMPLOYEE_ARRAY`. Always filter `IS_DELETED = FALSE`. Can filter by `ACCT_ID` for account-scoped lookups (alternative to ACCT_NAME on transcripts). |
 | `MODEL_SUPPORT.ZD_TICKETS` | Zendesk tickets. **`ORG_ID` is Zendesk's ORG_ID (NUMBER type), NOT Astro ORG_ID.** Join chain: `ZD_TICKETS.ORG_ID → MAPS.ZD_ORGS.ZD_ORG_ID → ACCT_ID`. Key: `STATUS` (open/pending/hold/solved/closed), `PRIORITY` (p1-p4), `TYPE` (question/incident/problem/task), `PRODUCT`, `IS_ESCALATED`, `BUSINESS_IMPACT`, `CUSTOMER_SENTIMENT`. |
@@ -163,9 +163,10 @@ END_DATE     DATE       -- Period end
 | `MODEL_SNOWFLAKE.SNOWFLAKE_CURRENT_TABLES` | **Schema discovery tool.** `TABLE_FQID`, `TABLE_SIZE_GB`, `IS_STALE`, `PRIMARY_KEY`, `FOREIGN_KEY`. Query before running against unknown large tables. |
 | `GTM.PUBLIC.CONTACT_360_V` | **Unified contact view** — SF contacts + product user status + MQL history + domain-level Skilljar training. Columns: `CONTACT_ID`, `ACCT_ID`, `ACCT_NAME`, `TITLE`, `CONTACT_URL`, `PRIMARY_DOMAIN`, `CONTACT_STATUS`, `LEAD_SCORE_GRADE`, `IS_OPTED_OUT_OF_EMAIL`, `IS_ACTIVE_BILLING_CONTACT`, `IS_PRODUCT_USER`, `PRODUCT_STATUS`, `LOGINS_COUNT`, `LAST_LOGIN_TS`, `MQL_COUNT`, `LAST_MQL_TS`, `LAST_MQL_CHANNEL`, `LAST_ASSIGNED_AE`, `DOMAIN_COURSES_COMPLETED`, `DOMAIN_HAS_CERTIFICATION`. Filter by `ACCT_ID` or `ACCT_NAME ILIKE`. No joins needed. Created 2026-04-08. **Note:** Gong sentiment not joinable here (no name column in SF_CONTACTS) — use `CONTACT_SENTIMENT_V` separately. |
 | `GTM.PUBLIC.CONTACT_SENTIMENT_V` | Pre-built Gong sentiment view. Columns: `contact_name`, `ACCT_NAME`, `avg_sentiment`, `call_count`, `contact_role` (Champion/Skeptic/At Risk), `sentiment_direction`. Use for rep-level contact health — no joins needed. Note: `GTM.GONG.*` tables do NOT exist; only `GTM.PUBLIC.*` views are accessible. |
+| `GTM.PUBLIC.CONTACT_NOTES` | Per-contact notes log (analogous to `ACCOUNT_NOTES` for individuals). Columns: `NOTE_ID`, `CONTACT_NAME`, `NOTE_DATE`, `NOTE_TYPE`, `CONTENT`, `SOURCE`, `CREATED_AT`. Filter by `ACCT_ID` to get all contact notes for an account. |
 | `GTM.PUBLIC.GONG_CALL_ENRICHMENTS_V` | Cortex-enriched Gong call view. Columns: `CALL_ID`, `ACCT_ID`, `ACCT_NAME`, `CALL_DATE`, `SENTIMENT_SCORE`, `DEAL_RISK`, `TECH_STACK`, `PAIN_POINTS`, `COMPETITORS`, `AIRFLOW_TOPICS`. Join to `HQ.MODEL_CRM_SENSITIVE.GONG_CALLS` on `CALL_ID` to get `CALL_TITLE`, `CALL_URL`, `CALL_BRIEF`, `CALL_NEXT_STEPS`, `PRIMARY_EMPLOYEE`, `CALL_DURATION`. Filter by `ACCT_ID` for account-scoped lookups. |
 | `GTM.PUBLIC.ZD_TICKET_ENRICHMENTS_V` | Cortex-enriched Zendesk ticket view. Columns: `TICKET_ID`, `ACCT_ID`, `TICKET_DATE`, `PRIORITY`, `STATUS`, `SENTIMENT_SCORE`, `ISSUE_CATEGORY`, `URGENCY_SIGNAL`, `KEY_PHRASES`, `PRODUCT_AREA`. Filter by `ACCT_ID` (SF account ID). No joins needed for account-level ticket summaries. |
-| `HQ.MODEL_CRM.SF_CAMPAIGN_MEMBERS` | Campaign membership and engagement. Columns: `ACCT_ID`, `CAMPAIGN_ID`, `STATUS`, `HAS_RESPONDED`, `CREATED_TS`, `FIRST_RESPONDED_TS`, `JOB_TITLE`, `COMPANY_OR_ACCOUNT`, `WEBINAR_NAME`, `FUNNEL_NAME`, `EBOOK_NAME`, `UTM_SOURCE`, `UTM_CAMPAIGN`, `MQL_QUALIFICATION_DATE`, `ASSIGNED_AE_NAME`, `ASSIGNED_SDR_NAME`, `REPORTING_CHANNEL`, `OPP_ID`. Join to `SF_CAMPAIGNS` on `CAMPAIGN_ID` for campaign metadata. |
+| `HQ.MODEL_CRM.SF_CAMPAIGN_MEMBERS` | Campaign membership and engagement. Columns: `ACCT_ID`, `CONTACT_ID`, `CAMPAIGN_ID`, `STATUS`, `HAS_RESPONDED`, `CREATED_TS`, `FIRST_RESPONDED_TS`, `JOB_TITLE`, `COMPANY_OR_ACCOUNT`, `WEBINAR_NAME`, `FUNNEL_NAME`, `EBOOK_NAME`, `UTM_SOURCE`, `UTM_CAMPAIGN`, `MQL_QUALIFICATION_DATE`, `ASSIGNED_AE_NAME`, `ASSIGNED_SDR_NAME`, `REPORTING_CHANNEL`, `OPP_ID`, `CAMPAIGN_MEMBER_EMAIL_DOMAIN`. Join to `SF_CAMPAIGNS` on `CAMPAIGN_ID` for campaign metadata. Filter by `ACCT_ID` for account-level campaign history, `CONTACT_ID` for contact-level, or `CAMPAIGN_MEMBER_EMAIL_DOMAIN` for domain-based lookups (useful for prospects without an ACCT_ID yet). |
 | `HQ.MODEL_CRM.SF_CAMPAIGNS` | Campaign definitions. Columns: `CAMPAIGN_ID`, `CAMPAIGN_NAME`, `TYPE`. Join key for `SF_CAMPAIGN_MEMBERS`. |
 | `HQ.MODEL_CRM.LF_PAGE_VIEWS` | Individual page view events within a Leadfeeder visit. Columns: `LF_VISIT_ID`, `PAGE_URL`, `PAGE_NAME`, `PAGEVIEW_TS`. Join to `LF_WEBSITE_VISITS` on `LF_VISIT_ID` for page-level detail. |
 | `MAPS.ZD_ORGS` | Zendesk org → SF account. `ZD_ORG_ID`, `ZD_ORG_NAME`, `ACCT_ID`, `ACCT_NAME`. Filter `IS_DELETED = FALSE`. |
@@ -650,6 +651,21 @@ The gold standard customer table (`HQ.MART_CUST.CURRENT_ASTRO_CUSTS`) — 140+ c
 - `PROJECTED_FULL_CREDIT_USE_DATE_7D`
 - `IS_OVERAGE_RISK` — approaching credit limit
 - `PROJECTED_OVERAGE_TAG`, `CREDIT_EXHAUSTION_TAG` — string tags set when overage/exhaustion is projected; filter `IS NOT NULL` to find at-risk accounts
+- `CREDIT_CONSUMED_AMT` — credits consumed to date in current contract period
+- `CONTRACT_GRANTED_AMT` — total contract credit amount
+- `LICENSE_CONSUMED_PCT` — fraction of contract consumed (0–1); multiply by 100 for percentage
+- `PROJECTED_CREDITS_CONSUMED_30D` — projected total credits consumed by period end (30d run rate)
+- `PROJECTED_OVERAGE_AMT_30D` — projected overage dollar amount at 30d run rate
+- `PROJECTED_OVERAGE_PCT_30D` — projected overage as % of contract
+
+**Pay-Go Specific** (filter `PLAN_TYPE = 'paygo'`)
+- `PLAN_TYPE` — `'paygo'` or `'contract'` — top-level billing type on CURRENT_ASTRO_CUSTS
+- `BILLING_PROVIDER_TYPE` — billing system identifier for the account
+- `PAYGO_BILLED_AMT_TO_DATE` — cumulative pay-go billing amount in current period
+- `PROJECTED_PAYGO_CONTRACT_AMT_30D` — projected total pay-go charge at 30d run rate
+- `USAGE_AMT_30D_LAG` — usage amount from the prior 30d window (for trend comparison)
+- `USAGE_GROWTH_PCT_30D` — MoM usage growth rate (current 30d vs prior 30d); multiply by 100 for %
+- `PROJECTED_PAYGO_CONTRACT_TAG` — string tag (non-null) when account is projected to exceed pay-go threshold
 
 **Health & Risk**
 - `SMOKE_SCORE`, `FIRE_SCORE`
@@ -862,4 +878,10 @@ Each entry captures a query pattern that was used successfully or a correction t
 - `DEPLOYMENT_COST_MULTI` confirmed new columns: `A5_WORKER_COST`, `A20_WORKER_COST`, `A5_WORKER_RUNTIME_SECONDS`, `A20_WORKER_RUNTIME_SECONDS`, `TOTAL_DEPLOYMENT_RUNTIME_SECONDS`, `TOTAL_EPHEMERAL_STORAGE_COST`, `TOTAL_REMOTE_EXECUTION_COST`, `TOTAL_OBSERVE_COST` — all usable for GPU/RE cost breakdown. Add `DEPLOYMENT_ID != 'no_deployment_id'` filter to exclude unassigned rows.
 - `WORKER_QUEUE_COST_MULTI` confirmed columns: `A5/A10/A20_WORKER_RUNTIME_SECONDS`, `TOTAL_COST`, `DEPLOYMENT_ID` — use for per-queue GPU hour breakdowns when `DEPLOYMENT_COST_MULTI` isn't granular enough.
 - `GTM.PUBLIC.ACCOUNT_NOTES` and `ACCOUNT_360_V` have no `ACCOUNT_NAME` column — two queries silently failed (0 bytes, 0 rows) trying `WHERE LOWER(n.ACCOUNT_NAME) LIKE ...`; a third tried `ACCOUNT_NAME, SF_ACCT_ID, ARR, STAGE, OWNER` on `ACCOUNT_360_V` (also wrong). Correct: `ACCOUNT_NOTES` uses `ACCT_ID` filter only; `ACCOUNT_360_V` columns follow `ACCT_*` naming (`ACCT_NAME`, `ACCT_ID`, `TOTAL_ARR_AMT`). Wrong column names trigger silent errors — no exception, just 0 rows returned, forcing a 129MB `SELECT * LIMIT 1` probe.
+
+**2026-04-13** — No queries in past 24h; 88 late-April-10 queries (post-cron) analyzed. Key new findings:
+- New `CURRENT_ASTRO_CUSTS` pay-go columns confirmed working: `PAYGO_BILLED_AMT_TO_DATE`, `PROJECTED_PAYGO_CONTRACT_AMT_30D`, `BILLING_PROVIDER_TYPE`, `PLAN_TYPE`, `USAGE_AMT_30D_LAG`, `USAGE_GROWTH_PCT_30D`, `LICENSE_CONSUMED_PCT`, `CREDIT_CONSUMED_AMT`, `CONTRACT_GRANTED_AMT`, `PROJECTED_CREDITS_CONSUMED_30D`, `PROJECTED_OVERAGE_AMT_30D`, `PROJECTED_OVERAGE_PCT_30D` — added to column reference
+- `GTM.PUBLIC.CONTACT_NOTES` confirmed: columns `NOTE_ID`, `CONTACT_NAME`, `NOTE_DATE`, `NOTE_TYPE`, `CONTENT`, `SOURCE`, `CREATED_AT`; filter by `ACCT_ID`; parallel structure to `ACCOUNT_NOTES` for per-person notes
+- `SF_CAMPAIGN_MEMBERS.CAMPAIGN_MEMBER_EMAIL_DOMAIN` confirmed: enables prospect campaign lookup by domain without needing `ACCT_ID` (useful pre-qualification); `CONTACT_ID` filter also confirmed
+- `LF_WEBSITE_VISITS` new columns confirmed: `VISIT_DURATION`, `CAMPAIGN_NAME`, `LF_VISIT_ID` (join key to `LF_PAGE_VIEWS`)
 <!-- PATTERNS_LOG_END -->
