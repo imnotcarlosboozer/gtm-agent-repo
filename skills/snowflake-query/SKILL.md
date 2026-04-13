@@ -1,6 +1,6 @@
 ---
 name: snowflake-query
-description: Query Astronomer's Snowflake data warehouse efficiently. Use when the user asks questions that require Snowflake data — customer usage, costs, billing, product metrics, org/user lookups, ARR, or any analytical question about Astronomer customers. Knows the full table map, join patterns, and optimization rules so queries are fast and correct on the first try.
+description: Query Astronomer's internal Snowflake data warehouse (HQ database). Use the moment the user asks anything about internal sales data — book of business, my accounts, show me all customers, pipeline, usage trends, DAG counts, ARR, billing costs, renewal dates, days to renewal, credit balance, which accounts are at risk, org/user lookups, product metrics, "how many", "find customers", "show me Z", "who uses X". Also use for account-specific metrics (usage, spend, compute) even when an account is named. Knows the full table map, join patterns, and optimization rules. SCOPE: Astronomer's internal GTM data only — for Airflow pipeline questions use data:/data-engineering: skills instead.
 ---
 
 # Snowflake Query
