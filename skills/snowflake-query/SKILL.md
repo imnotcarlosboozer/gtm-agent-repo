@@ -169,6 +169,7 @@ END_DATE     DATE       -- Period end
 | `HQ.MODEL_CRM.SF_CAMPAIGN_MEMBERS` | Campaign membership and engagement. Columns: `ACCT_ID`, `CONTACT_ID`, `CAMPAIGN_ID`, `STATUS`, `HAS_RESPONDED`, `CREATED_TS`, `FIRST_RESPONDED_TS`, `JOB_TITLE`, `COMPANY_OR_ACCOUNT`, `WEBINAR_NAME`, `FUNNEL_NAME`, `EBOOK_NAME`, `UTM_SOURCE`, `UTM_CAMPAIGN`, `MQL_QUALIFICATION_DATE`, `ASSIGNED_AE_NAME`, `ASSIGNED_SDR_NAME`, `REPORTING_CHANNEL`, `OPP_ID`, `CAMPAIGN_MEMBER_EMAIL_DOMAIN`. Join to `SF_CAMPAIGNS` on `CAMPAIGN_ID` for campaign metadata. Filter by `ACCT_ID` for account-level campaign history, `CONTACT_ID` for contact-level, or `CAMPAIGN_MEMBER_EMAIL_DOMAIN` for domain-based lookups (useful for prospects without an ACCT_ID yet). |
 | `HQ.MODEL_CRM.SF_CAMPAIGNS` | Campaign definitions. Columns: `CAMPAIGN_ID`, `CAMPAIGN_NAME`, `TYPE`. Join key for `SF_CAMPAIGN_MEMBERS`. |
 | `HQ.MODEL_CRM.LF_PAGE_VIEWS` | Individual page view events within a Leadfeeder visit. Columns: `LF_VISIT_ID`, `PAGE_URL`, `PAGE_NAME`, `PAGEVIEW_TS`. Join to `LF_WEBSITE_VISITS` on `LF_VISIT_ID` for page-level detail. |
+| `GTM.PUBLIC.ACCOUNT_RESEARCH_LATEST_V` | Latest account research report per account (one row per ACCT_ID). Columns: `RESEARCH_ID`, `ACCT_ID`, `ACCT_NAME`, `RESEARCH_DATE`, `SCORE`, `GRADE`, `CONFIDENCE`, `MC_GRADE`, `SOURCES_USED` (JSON), `REPORT_MD` (full markdown report), `CREATED_AT`, `DAYS_SINCE_RESEARCH`, `IS_STALE`. Filter by `ACCT_ID` or `ACCT_NAME ILIKE`. Check `IS_STALE` and `DAYS_SINCE_RESEARCH` to decide whether to re-run research. |
 | `MAPS.ZD_ORGS` | Zendesk org → SF account. `ZD_ORG_ID`, `ZD_ORG_NAME`, `ACCT_ID`, `ACCT_NAME`. Filter `IS_DELETED = FALSE`. |
 | `MAPS.ZD_ACCTS` | SF account → Zendesk orgs (reverse). `ACCT_ID`, `ZD_ORG_MAP` (array). |
 | `MODEL_FINANCE.METRONOME_CONTRACTS` | Billing contracts. `PLAN_TYPE`: contract/paygo/trial/pov/internal. `IS_ACTIVE`, `START_TS`, `END_TS`, `RATE_CARD_ID`. Join via `METRONOME_ID`. |
@@ -236,6 +237,11 @@ Use this before writing any query. Pick the first table that satisfies the quest
 **"What support tickets does this account have?"**
 → For enriched summary (sentiment, urgency, category): `GTM.PUBLIC.ZD_TICKET_ENRICHMENTS_V` filter by `ACCT_ID` — no joins needed  
 → For raw tickets: `MODEL_SUPPORT.ZD_TICKETS` — bridge via `ZD_TICKETS.ORG_ID → MAPS.ZD_ORGS.ZD_ORG_ID → ACCT_ID` (or use `SF_ACCOUNTS.ZD_ORG_ID` shortcut)
+
+**"Has this account been researched before? What was the fit score / grade?"**
+→ `GTM.PUBLIC.ACCOUNT_RESEARCH_LATEST_V` — filter by `ACCT_ID` or `ACCT_NAME ILIKE`  
+→ Returns: `SCORE`, `GRADE`, `MC_GRADE`, `CONFIDENCE`, `DAYS_SINCE_RESEARCH`, `IS_STALE`, full `REPORT_MD`  
+→ Check `IS_STALE = FALSE AND DAYS_SINCE_RESEARCH <= 14` before deciding whether to re-research
 
 **"What's in the open sales pipeline?"**
 → `MODEL_CRM.SF_OPPS` with `IS_OPEN = TRUE`  
@@ -884,4 +890,9 @@ Each entry captures a query pattern that was used successfully or a correction t
 - `GTM.PUBLIC.CONTACT_NOTES` confirmed: columns `NOTE_ID`, `CONTACT_NAME`, `NOTE_DATE`, `NOTE_TYPE`, `CONTENT`, `SOURCE`, `CREATED_AT`; filter by `ACCT_ID`; parallel structure to `ACCOUNT_NOTES` for per-person notes
 - `SF_CAMPAIGN_MEMBERS.CAMPAIGN_MEMBER_EMAIL_DOMAIN` confirmed: enables prospect campaign lookup by domain without needing `ACCT_ID` (useful pre-qualification); `CONTACT_ID` filter also confirmed
 - `LF_WEBSITE_VISITS` new columns confirmed: `VISIT_DURATION`, `CAMPAIGN_NAME`, `LF_VISIT_ID` (join key to `LF_PAGE_VIEWS`)
+
+**2026-04-15** — 45 queries observed (account-research sessions for Pay.com + Rithm Capital prospects). Key findings:
+- `GTM.PUBLIC.ACCOUNT_RESEARCH_LATEST_V` confirmed as new table (was undocumented): queried in every account-research session; columns: `RESEARCH_ID`, `ACCT_ID`, `ACCT_NAME`, `RESEARCH_DATE`, `SCORE`, `GRADE`, `CONFIDENCE`, `MC_GRADE`, `SOURCES_USED` (JSON), `REPORT_MD` (full markdown), `DAYS_SINCE_RESEARCH`, `IS_STALE`; added to schema map and decision tree
+- `GONG_CALL_TRANSCRIPTS` full-fetch pattern (all transcript fields + join to `GONG_CALLS`) scanned 735MB for a single `ACCT_NAME ILIKE '%Pay.com%'` — expected for transcript fetches; no optimization needed at 1.4s; all other queries hit result cache (0MB, 0.1s)
+- Account-research multi-table query pattern confirmed healthy: 10 parallel queries per account (`SF_ACCOUNTS`, `SF_CONTACTS`, `GONG_CALL_ENRICHMENTS_V`, `LF_WEBSITE_VISITS + LF_PAGE_VIEWS`, `SF_CAMPAIGN_MEMBERS`, `SF_OPPS`, `SF_ASTRO_ORGS`, `ZD_TICKET_ENRICHMENTS_V`, `ACCOUNT_NOTES`, `ACCOUNT_RESEARCH_LATEST_V`) — repeated runs hit result cache on all queries
 <!-- PATTERNS_LOG_END -->
