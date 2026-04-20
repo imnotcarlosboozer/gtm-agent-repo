@@ -30,37 +30,38 @@ Skip the `ACCT_NAME LIKE '%..%'` CTE lookup for these accounts — use IDs direc
 |---|---|---|---|---|---|
 | Third Point | `0014x00000I7ph6AAB` | `cl6e1hc82009l0s0ebuei60ec` | `406e7187-2fae-45d5-b96f-1c893bbf0e30` | $136K | 2026-05-15 |
 | Go Sonar (FreightWaves) | `0014x00000dz5NwAAI` | `cl8ub8vd001xe0uxz950r9c35` | `2d68588a-b985-43f8-a60f-75403ddcec18` | $78K | 2026-09-28 |
-| Advanced Symbolics | `0014x000017PVw9AAG` | `clmz6bi9e00fm01hywjtgaj68` | `4441d863-d407-47dc-aa31-0171a3c78f40` | $54K | — |
-| Surge AI | `0014x00000seOeeAAE` | `clthudyr0011301nzy9gvdtq1` | `33adbe27-fc52-4edb-bd06-d886927feed3` | $52K | — |
-| Boothbay Fund Management | `001PQ00000Inu6qYAB` | `cmeohlt941c4f01pepwpyksne` | `1db2ab6c-8e65-408c-aaa0-cac2bcfce465` | $49K | — |
+| Advanced Symbolics | `0014x000017PVw9AAG` | `clmz6bi9e00fm01hywjtgaj68` | `4441d863-d407-47dc-aa31-0171a3c78f40` | $53K | — |
 | Premier Truck Rental LLC | `001PQ00000gl7fNYAQ` | `cmhbcy7ah01yj01nc3tmfooy5` | `6787d2e9-29cb-45ac-8452-15061763d15f` | $48K | 2026-10-31 |
 | Pulumi | `0014x00000GNSZ6AAP` | `cmbz9v67x1tg201iyoi3kxpi2` | `cd3a1bf7-271b-499c-aaa2-7d7e9a4d4260` | $37K | 2026-08-18 |
 | Together Computer | `001PQ00000AFyjAYAT` | `cmianzvn30dvy01kcmdamoe1q` | `e32e8a06-b47a-4453-b556-7e809ec7215c` | $36K | 2027-01-04 |
-| SpringWorks Therapeutics | `001PQ00000ERgJRYA1` | `cm850f59l035g01ktwh5iwzpe` | `2c568dd9-ab11-4c29-a029-b8af1b7666a9` | $35K | 2026-04-13 |
 | Cordada | `0014x00000sdkWVAAY` | `clcuypvia0qe20t3d6c1if8ws` | `d83a4268-9deb-4369-b23f-2c56e728bab5` | $35K | 2027-01-04 |
 | Differential | `0014x00000GMFd9AAH` | `cljsvo6na00y101lvx7i51kjm` | `8e2c81c8-d8e6-4ab4-ba8b-3c28aeb1d581` | $35K | 2026-11-03 |
-| USAFacts | `001Du000004GXcWIAW` | `clk31o2l600fs01hkyyw98pwt` | `4070cbd8-5721-46f6-8212-24d09dff4d49` | $32K | 2026-04-08 |
+| USAFacts | `001Du000004GXcWIAW` | `clk31o2l600fs01hkyyw98pwt` | `4070cbd8-5721-46f6-8212-24d09dff4d49` | $32K | 2027-04-08 |
 | DLR | `001Du00000324PfIAI` | `cmc4xg1ih178v01ihhft678xg` | `2689990c-0ecc-486d-81cd-0ea4b12a3ba5` | $32K | 2026-07-24 |
 | Crexi | `001Du000002gpwZIAQ` | `cmhtofqia161w01me3veevo66` | `a2dd259a-1309-42ad-bc2a-89594808c2c8` | $30K | 2027-01-04 |
 | Rithm Capital | `001Du000003YrRKIA0` | `cmf5gimkj3ls501psapalaz63` | `25f75fcb-5dc8-42d1-bbf3-898bf043e0f3` | $28K | 2028-10-31 |
 | GlossGenius | `001Du000004SswEIAS` | `cllmjc18y000801fgr9ehz27g` | `e3cfb8e8-d632-40ec-a9dd-8f1f12456298` | $28K | 2026-10-31 |
 | Parafin | `0014x00000NQuMrAAL` | `cljpyvrn4020t01lt2igt3kdo` | `ff00fbd8-f00c-4801-b7ef-29a34315557a` | $28K | 2026-08-22 |
+| NYCSBUS | `0014x0000123qn1AAA` | `cl1w5kbm301ya0rzo0pyb7v1k` | `54369b0a-754c-4fa8-9004-7e7d291b781e` | $26K | — |
 | Behaviour Interactive | `0014x00000l0uEhAAI` | `cl6fd5hg9010c0tzphpmgftz3` | `b658958a-42a3-4f14-b758-0f405ec50091` | $26K | 2026-10-10 |
 | Pretto | `0014x00000g3H2WAAU` | `cmk6y0dsn03dy01psb8earfkl` | `da14d290-2260-489c-9e3b-097636683397` | $25K | 2027-02-12 |
 | Pivotal Life Sciences | `001Du000003elhgIAA` | `clgzuej0u006t01lmwj6gigt3` | `9f55545c-61b7-4f36-8ae4-1ac8405f6020` | $25K | 2026-04-30 |
 | Ace 1 Media | `001PQ00000GaBfiYAF` | `cly3qqsky145801k2ulltysqu` | `4a594f96-3f2a-4c11-a032-26305a8ee03f` | $25K | 2026-07-17 |
 | New Orleans Pelicans | `001PQ00000KPy79YAD` | `cm1du2l6y0zfs01j5dbi5wnxt` | `3a6ae7ce-859b-44c8-a9ce-e993d33727cb` | $24K | 2026-10-06 |
+| Boothbay Fund Management | `001PQ00000Inu6qYAB` | `cmeohlt941c4f01pepwpyksne` | `1db2ab6c-8e65-408c-aaa0-cac2bcfce465` | $23K | — |
 | Saatchi Art | `0014x00000GMFuUAAX` | `cljsnv8kz00ut01gi8a2xpfcy` | `d28b22cf-e45a-42e4-af1c-f17e39249108` | $23K | 2027-01-29 |
+| Middle Seat | `001PQ00000ERfaNYAT` | `cmbqzrnkj1rge01lh73hyvhbl` | `9d7aa215-15a1-450b-b01d-5d0e4e2d6a68` | $22K | — |
 | Updater Inc. | `0014x00000A9O24AAF` | `cloqcobtl003401kby4esrrmp` | `62b61b9d-ea01-41ea-a188-dc7c133fc839` | $22K | 2026-10-30 |
-| Middle Seat | `001PQ00000ERfaNYAT` | `cmbqzrnkj1rge01lh73hyvhbl` | `9d7aa215-15a1-450b-b01d-5d0e4e2d6a68` | $21K | — |
-| NYCSBUS | `0014x0000123qn1AAA` | `cl1w5kbm301ya0rzo0pyb7v1k` | `54369b0a-754c-4fa8-9004-7e7d291b781e` | $20K | 2026-03-31 |
-| NOW Insurance | `0014x00000GMELrAAP` | `cloolp7z201yw01jhymmhlwwb` | `bc45e0fa-45ef-435b-8dfe-f570716b8512` | $18K | — |
+| JCA | `001PQ00000EJdNRYA1` | `cmgv7px2p09ko01jxdnra9glk` | `c4392afb-73f5-4c0a-a7d0-a4bd14d20647` | $19K | — |
 | Spoiler Alert | `0014x00000u5N6xAAE` | `cm6fgnbcj1ep501l3ilxb1xgj` | `4420b6b3-e761-4425-973b-25a007ec3b80` | $18K | 2027-02-27 |
-| JCA | `001PQ00000EJdNRYA1` | `cmgv7px2p09ko01jxdnra9glk` | `c4392afb-73f5-4c0a-a7d0-a4bd14d20647` | $18K | — |
+| NOW Insurance | `0014x00000GMELrAAP` | `cloolp7z201yw01jhymmhlwwb` | `bc45e0fa-45ef-435b-8dfe-f570716b8512` | $17K | — |
 | Draftea Technologies | `0014x000017RT4bAAG` | `cl4eolzp300l20s0ec9gz9g2m` | `b2cd4ee8-a109-48b8-a93d-241dd73ef804` | $17K | 2026-05-31 |
+| Surge AI | `0014x00000seOeeAAE` | `clthudyr0011301nzy9gvdtq1` | `33adbe27-fc52-4edb-bd06-d886927feed3` | $16K | — |
 | Pyx Health | `0014x00000dxRcRAAU` | `cm976gqb51ila01madyh6c1mu` | `c6e007af-1a59-4df6-8928-4cada59cb45d` | $15K | — |
 | Black Crow AI | `001Du0000032zPLIAY` | `clwqkqwwy0puu01nqtui7xyms` | `26c96d26-7530-4737-9c16-288025d248d7` | $15K | 2026-06-30 |
+| Cozy Earth | `001PQ00000sSgIBYA0` | `cmn3jiuq64bla01pudh620bf4` | `d25a17b1-aa39-4153-aeaa-91be6b9a85dd` | $14K | — |
 | Hover | `0014x00000GM7KzAAL` | `clmkxwux3003201m2pdvybgtj` | `c9216665-f052-448f-938b-a7345b6ff770` | $14K | — |
+| BuildingMinds | `0014x00000bvRIyAAM` | `cmlr75fzo8f2v01om46irqnfe` | `fbaa6d0b-8455-4ab9-9315-ee8c940994f5` | $13K | 2027-04-02 |
 | Prizma | `001PQ000007wQB5YAM` | `clv5ueo3g054z01or4o0ztkft` | `528793e9-9d24-4891-a638-1be211aa779a` | $14K | — |
 | Panther Labs | `0014x000014diPMAAY` | `cl4rc9hvz004j0txb8jfw88f3` | `9b110534-a066-4740-aaff-a209fb2aaefc` | $13K | 2026-04-26 |
 | Huli | `0014x00000DKqetAAD` | `clnmy428c008s01nx7hqs9w1t` | `423c2c9f-434c-4b9b-9f0d-479b9ed9f0a9` | $12K | — |
@@ -74,10 +75,34 @@ Skip the `ACCT_NAME LIKE '%..%'` CTE lookup for these accounts — use IDs direc
 | RaveHealth | `001PQ00000IeflGYAR` | `cm05e7u59013n01n352gir6cb` | `9c7513f6-e811-4833-942a-271d414da30e` | $10K | 2026-09-30 |
 | MagicSchool AI | `001PQ00000fwt9OYAQ` | `cmfbox58l1icn01nt6bvlwg3n` | `36121aeb-26d0-4d21-8665-fb8595e63006` | $10K | 2026-11-02 |
 | PlaneSense | `001PQ000007tSanYAE` | `clt68ead000js01k55vjqtek8` | `9f592c3a-09cc-47c2-829c-1ad2d99c6fc9` | $10K | 2026-04-30 |
-| Cozy Earth | `001PQ00000sSgIBYA0` | `cmn3jiuq64bla01pudh620bf4` | — | — | — |
-| BuildingMinds | `0014x00000bvRIyAAM` | `cmlr75fzo8f2v01om46irqnfe` | — | — | — |
+| Tapcast | `0014x00000GNOS5AAP` | `clj65xg94021901klxq2lc2jc` | `fc89c56c-5af4-4601-80a7-7790361ebc31` | $9K | — |
+| dolabradigital.com | `001PQ00000CPC8kYAH` | `clvt0722y06tf01p9guf8ow3o` | `c12c585d-bde6-490a-b22f-b8fbedb8737c` | $9K | — |
+| Ayala Corporation | `0014x00000DKqcKAAT` | `clnbdv5mf00bm01mm4jkicddd` | `02864763-fddc-48b9-a744-70ef37a00be4` | $9K | 2027-02-02 |
+| GovWell | `001PQ00000gjycXYAQ` | `cmfqt7yg31baz01pdd4biteex` | `a19bcf3d-db9d-4ddb-a74c-d4c32053ccfe` | $9K | — |
+| Homebound | `0014x00000DKqb2AAD` | `clly67kuc00d101mv4al8rsd9` | `18e7f6c8-5412-4506-8456-3cea2d847d0e` | $8K | — |
+| Kapten & Son GmbH | `001PQ00000e0R7gYAE` | `cme6v84lz1o4k01qhw9k57l0y` | `22d4b355-5c8e-47bf-8267-7f1c6088e11f` | $8K | — |
+| Tennessee Football | `001PQ00000XSb6UYAT` | `cmb1irpf90jgg01ma1dlcyinm` | `aef3151e-4341-4a7a-afb1-6e397116f58c` | $8K | 2028-06-01 |
+| Land Insights | `001PQ00000RYaCqYAL` | `cm68d8gob1yyk01nc9w3l1t82` | `3a954e06-526a-4110-b13b-edb8de01de9e` | $8K | — |
+| Bay FC | `001PQ00000PBCaXYAX` | `cm4vxyn670lxu01lctl1hhgyt` | `3a9d9430-9fa9-4f19-8d48-7548bf6b6436` | $8K | 2027-02-02 |
+| BioAge Labs | `001Du000002npk0IAA` | `cma6t7x7n078d01jmc0zgsefn` | `336c5f2b-14f9-4727-a648-9f96f0041dff` | $7K | — |
+| The Picklr | `001PQ00000hwpvvYAA` | `cmgi1jxov288n01q6yuq3uzhq` | `ca30a482-04da-43f5-8272-23843b0254ed` | $7K | — |
+| Dempsey Uniform & Linen | `001PQ00000OnZtFYAV` | `cm4x7wgam0syg01m7kyup3co7` | `b1dcda7d-58bd-4753-940f-10485c7357d6` | $5K | 2027-01-28 |
+| Pay.com | `0014x00000NRfQPAA1` | `cmc8pap981zll01ln0su2ly9q` | `6df7890c-52e8-4c11-8727-ce40d7cf66de` | $5K | — |
+| uDocz | `001Du000005FMyFIAW` | `clqpdxwwb02qs01k9ip69mcf5` | `5b1c21ef-457c-4869-a6c6-784dd2accab5` | $5K | — |
+| TrovaTrip | `0014x000017pHUyAAM` | `clvcghivp013y01ou9su9xbvf` | `fe61fb7b-ca2c-46e3-935c-c942488eff88` | $4K | — |
+| Coalesce | `001Du000004brUdIAI` | `cmj8pil8j3g2i01ibmxu1hb2g` | `2cd4e265-eb77-45c8-9298-df04c00b9374` | $4K | — |
+| Ardent AI | `001PQ00000NhKpSYAV` | `cmcnpmu5j0l8x01ly0mjxxgdk` | `28b5bd18-494f-4600-b124-25baecafac0f` | $4K | — |
+| Workweek | `001PQ00000At4WfYAJ` | `clve8u36c02o101n8b7ctqil9` | `fb62985b-d5b6-4844-8757-33e1b7eb333c` | $4K | — |
+| Camperoni, Inc. | `001PQ00000CTnrJYAT` | `clvy14mjc05dr01n2q5s01tlv` | `ed31d880-ccd0-4384-9532-b38aec23baa5` | $3K | — |
+| Next Pathway | `001Du000002XE1hIAG` | `clq2ngbm6026001m8jqkao477` | `4114517b-8f71-4212-9161-9ad5e4fdc581` | $3K | — |
+| VISORY LLC | `001PQ00000bzeZVYAY` | `cmcywlc6211o401pv3gzrspt0` | `2e08976f-2286-4fb8-bcf3-3b68ae210699` | $3K | — |
+| Asimetrix | `001PQ00000cJ6iCYAS` | `cmdt9j7461e5i01phl4yuqhua` | `2469b2c4-f6d2-400c-aadf-4351cdd28bb5` | $1K | — |
+| DataBank | `0014x000011c7AQAAY` | `cmmdtu33z2gbm01nxci7cw9tt` | `064f2ccd-b68f-4efb-bbcd-05354e1f4258` | <$1K | — |
+| J&R Data | `001PQ00000cPhaCYAS` | `cmdxv8tml2hsh01ms2et00db2` | `4ee90521-696a-4b21-a525-c9fc3e2e988f` | <$1K | — |
+| Tracer | `001PQ000009R73SYAS` | `club6q3tx03e201o922b1d9kw` | `d2da0407-90f9-4199-94bf-a218f5c13643` | <$1K | — |
+| SpringWorks Therapeutics | `001PQ00000ERgJRYA1` | `cm850f59l035g01ktwh5iwzpe` | `2c568dd9-ab11-4c29-a029-b8af1b7666a9` | $0 | 2027-04-13 |
 
-> **Note**: Cache refreshed 2026-04-08. MileIQ removed (contract expired 2026-04-06). ACCT_IDs verified from `CURRENT_ASTRO_CUSTS`. Refresh from `CURRENT_ASTRO_CUSTS WHERE OWNER_NAME ILIKE '%kenney%'`.
+> **Note**: Cache refreshed 2026-04-15. Full book of business from `CURRENT_ASTRO_CUSTS WHERE OWNER_NAME ILIKE '%kenney%'`. Excludes `amieles_personal` (personal test account). Refresh query: `SELECT ACCT_NAME, ACCT_ID, ORG_ID, METRONOME_ID, TOTAL_ARR_AMT, CONTRACT_END_DATE FROM HQ.MART_CUST.CURRENT_ASTRO_CUSTS WHERE OWNER_NAME ILIKE '%kenney%' ORDER BY TOTAL_ARR_AMT DESC NULLS LAST`.
 
 ---
 
@@ -141,7 +166,7 @@ END_DATE     DATE       -- Period end
 | `MODEL_ASTRO.TASK_RUNS` | **7.4B rows / 1TB** — always filter by date |
 | `MODEL_ASTRO.DAG_RUNS` | **1.5B rows** — always filter by date |
 | `MODEL_CRM.SF_CONTACTS` | Salesforce contacts. PK: `CONTACT_ID`. No email column (privacy) — use `CONTACT_URL`. Key columns: `ACCT_ID`, `ACCT_NAME`, `TITLE`, `PRIMARY_DOMAIN`, `CONTACT_STATUS`, `LEAD_SCORE_GRADE`, `SOURCE`, `IS_OPTED_OUT_OF_EMAIL`, `IS_ACTIVE_BILLING_CONTACT`, `IS_BILLING_CONTACT`, `IS_TRIAL_CONTACT`, `OWNER_NAME`, `LAST_ACTIVITY_TS`, `LAST_SALES_ACTIVITY_TS`, `FIRST_MQL_DATE`, `LAST_MQL_DATE`, `LAST_VISITED_PRICING_PAGE_DATE`, `LAST_VISITED_DEBUGGING_AIRFLOW_PAGE_DATE`, `LAST_VISITED_DEBUGGING_DAGS_PAGE_DATE`, `ASTRO_USER_ID` (→ `MODEL_ASTRO.USERS.USER_ID`), `ASTRO_ORG_ID`, `ZD_USER_ID`. Filter `IS_DELETED = FALSE AND IS_EMPLOYEE = FALSE`. |
-| `MODEL_CRM.SF_ACCOUNTS` | Salesforce accounts. Key columns: `ACCT_NAME`, `ACCT_ID`, `ACCT_DOMAIN`, `OWNER_NAME`, `SALES_TEAM` (Commercial/Enterprise/Strategic), `SALES_REGION`, `SEGMENT_PLANNED`, `TOTAL_ARR_AMT`, `SMOKE_SCORE`, `FIRE_SCORE`, `ACCT_SCORE`, `ACCT_SCORE_POSITIVE_DRIVERS`, `ACCT_SCORE_NEGATIVE_DRIVERS`, `ICP_DESIGNATION_V2`, `ACCT_HEALTH`, `IS_CURRENT_CUST`, `IS_CHURNED_CUST`, `CUSTOMER_SINCE_DATE`, `IS_CHURN_RISK`, `NEXT_RENEWAL_DATE`, `LAST_MQL_DATE`, `LAST_COSMOS_DOC_VIEW_DATE`, `LAST_DAG_FACTORY_DOWNLOAD_DATE`, `BILLING_COUNTRY`, `SHIPPING_COUNTRY`, `HG_AIRFLOW/DATABRICKS/MWAA` (boolean tech flags), `ZD_ORG_ID` (direct Zendesk org ID — shortcut for ZD lookups without MAPS join). **No IS_DELETED column** — filter `ACCT_TYPE NOT IN ('Internal','Competitor')`. |
+| `MODEL_CRM.SF_ACCOUNTS` | Salesforce accounts. Key columns: `ACCT_NAME`, `ACCT_ID`, `ACCT_DOMAIN`, `OWNER_NAME`, `INDUSTRY`, `SALES_TEAM` (Commercial/Enterprise/Strategic), `SALES_REGION`, `SEGMENT_PLANNED`, `TOTAL_ARR_AMT`, `SMOKE_SCORE`, `FIRE_SCORE`, `ACCT_SCORE`, `ACCT_SCORE_POSITIVE_DRIVERS`, `ACCT_SCORE_NEGATIVE_DRIVERS`, `ICP_DESIGNATION_V2`, `ACCT_HEALTH`, `IS_CURRENT_CUST`, `IS_CHURNED_CUST`, `CUSTOMER_SINCE_DATE`, `IS_CHURN_RISK`, `NEXT_RENEWAL_DATE`, `LAST_MQL_DATE`, `LAST_COSMOS_DOC_VIEW_DATE`, `LAST_DAG_FACTORY_DOWNLOAD_DATE`, `BILLING_COUNTRY`, `SHIPPING_COUNTRY`, `HG_AIRFLOW/DATABRICKS/MWAA` (boolean tech flags), `ZD_ORG_ID` (direct Zendesk org ID — shortcut for ZD lookups without MAPS join). **No IS_DELETED column** — filter `ACCT_TYPE NOT IN ('Internal','Competitor')`. |
 | `MODEL_CRM.SF_OPPS` | Opportunities. `OPP_TYPE`: New Business/Expansion/Renewal/Guided Trial/Churn/Downsell. Stages: `1-Discovery` → `2-QSO & Demo` → `3-EB Meeting` → `4-Tech Workshop/POV` → `5-Negotiate` → `7-Closed Won`/`8-Closed Lost`. Filter active: `IS_OPEN = TRUE`. Key columns: `AMT`, `INCREMENTAL_ARR_AMT`, `TOTAL_ACV`, `NEW_BUSINESS_ACV`, `CLOSE_DATE`, `CREATED_DATE`, `WON_DATE`, `LOST_DATE`, `OWNER_FORECAST_CATEGORY`, `NEXT_STEPS`, `IS_WON`, `IS_LOST`, `LOSS_REASON`, `LOSS_DETAILS`, `COMPETITION`, `CLOUD_PROVIDER`, `LEAD_SOURCE`, `DISCOVERY_MEETING_DATE`, `AIRFLOW_COMMITMENT`, `AIRFLOW_EXPERIENCE`, `CURRENT_AIRFLOW_DEPLOYMENT_MODEL`, `CURRENT_AIRFLOW_VERSIONS`, `CURRENT_AIRFLOW_ENVIRONMENTS_COUNT`. |
 | `MODEL_CRM.SF_MQLS` | MQL events. One row per MQL — contacts can have multiple. Key: `CONTACT_ID`, `ACCT_ID`, `MQL_TS`, `REPORTING_CHANNEL` (Webinar/Free Trial/Tradeshow/Paid Social/Paid Search/Field Event/etc), `ASSIGNED_AE_NAME`, `ASSIGNED_SDR_NAME`, `DISQUALIFICATION_REASON`. |
 | `MODEL_CRM.SF_USERS` | SF users (reps, CSMs, FEs). `IS_ACTIVE`, `IS_ACCT_EXEC`. `ROLE` examples: `Commercial Sales (AE)`, `Enterprise Sales (AE) - East (Ritchie)`, `Field Engineer - Enterprise`, `CSM`. `SEGMENT`: Commercial/Enterprise/Enterprise+. |
@@ -199,6 +224,7 @@ Use this before writing any query. Pick the first table that satisfies the quest
 **"Give me a full account snapshot / everything about this account"**
 → `GTM.PUBLIC.ACCOUNT_360_V` — single query, one row per account, all signals pre-joined  
 → Returns: ARR, usage, contract, Gong sentiment, deal risk, ZD tickets, contact count, LF visits, research tier  
+→ Also has `RESEARCH_DATE`, `RESEARCH_IS_STALE`, `OWNER_NAME` — usable directly for research-cron eligibility checks (e.g. `WHERE OWNER_NAME ILIKE '%kenney%' AND (RESEARCH_DATE IS NULL OR RESEARCH_IS_STALE = TRUE)`)  
 → ⚠️ Column names use `ACCT_*` pattern — NOT `ACCOUNT_*`: use `ACCT_NAME`, `ACCT_ID`, `TOTAL_ARR_AMT`. `ACCOUNT_NAME`/`SF_ACCT_ID`/`ARR`/`STAGE`/`OWNER` are NOT valid columns (silent error, 0 rows)
 
 **"What's the history / what have we discussed with this account? / What notes exist?"**
@@ -895,4 +921,8 @@ Each entry captures a query pattern that was used successfully or a correction t
 - `GTM.PUBLIC.ACCOUNT_RESEARCH_LATEST_V` confirmed as new table (was undocumented): queried in every account-research session; columns: `RESEARCH_ID`, `ACCT_ID`, `ACCT_NAME`, `RESEARCH_DATE`, `SCORE`, `GRADE`, `CONFIDENCE`, `MC_GRADE`, `SOURCES_USED` (JSON), `REPORT_MD` (full markdown), `DAYS_SINCE_RESEARCH`, `IS_STALE`; added to schema map and decision tree
 - `GONG_CALL_TRANSCRIPTS` full-fetch pattern (all transcript fields + join to `GONG_CALLS`) scanned 735MB for a single `ACCT_NAME ILIKE '%Pay.com%'` — expected for transcript fetches; no optimization needed at 1.4s; all other queries hit result cache (0MB, 0.1s)
 - Account-research multi-table query pattern confirmed healthy: 10 parallel queries per account (`SF_ACCOUNTS`, `SF_CONTACTS`, `GONG_CALL_ENRICHMENTS_V`, `LF_WEBSITE_VISITS + LF_PAGE_VIEWS`, `SF_CAMPAIGN_MEMBERS`, `SF_OPPS`, `SF_ASTRO_ORGS`, `ZD_TICKET_ENRICHMENTS_V`, `ACCOUNT_NOTES`, `ACCOUNT_RESEARCH_LATEST_V`) — repeated runs hit result cache on all queries
+**2026-04-20** — 48 queries observed (account-research cron + Dempsey account-research session):
+- `GTM.PUBLIC.ACCOUNT_360_V` has `RESEARCH_DATE`, `RESEARCH_IS_STALE`, and `OWNER_NAME` columns — confirmed used in research-cron eligibility query (`WHERE OWNER_NAME ILIKE '%kenney%' AND (RESEARCH_DATE IS NULL OR RESEARCH_IS_STALE = TRUE)`); updated decision tree note
+- `SF_ACCOUNTS.INDUSTRY` column confirmed in live query (was missing from schema table) — added to column list
+- All account-research session queries (SF_ACCOUNTS, GONG_CALL_TRANSCRIPTS, GONG_CALL_ENRICHMENTS_V, LF_WEBSITE_VISITS, SF_CAMPAIGN_MEMBERS, SF_OPPS, SF_ASTRO_ORGS, ZD_TICKET_ENRICHMENTS_V, ACCOUNT_NOTES, ACCOUNT_RESEARCH_LATEST_V) hit result cache on repeated runs — 10-query parallel pattern fully cache-warm
 <!-- PATTERNS_LOG_END -->
