@@ -734,7 +734,7 @@ Use these to write correct `WHERE` clauses without querying the table first.
 Values: Customer, Prospect, Partner, Internal, Competitor, Other
 
 **`SF_ACCOUNTS.ACCT_STATUS`**
-Values: Active, Inactive, Former Customer
+Values: Active, Inactive, Former Customer, No Engagement
 
 **`SF_ACCOUNTS.SALES_TEAM`**
 Values: Commercial, Enterprise, Strategic, Growth (PLG), Partner
@@ -940,4 +940,10 @@ Each entry captures a query pattern that was used successfully or a correction t
 - `MODEL_ASTRO.DEPLOYMENTS` has `REGION` and `RESILIENCY` columns (previously undocumented); `MODEL_ASTRO.CLUSTERS` confirmed as a table joinable from `MODEL_ASTRO.ORGANIZATIONS` via `CLUSTER_ID`
 - `MODEL_FINANCE.METRONOME_ID_PRICE_LOG` exists (undocumented table) — needs `SELECT * LIMIT 50` to discover schema before use
 - `DEPLOYMENT_COST_MULTI` scans ~1.8GB per account even with tight ORG_ID + TIME_GRAIN + date filters — expected, no fix needed; use `ORG_COST_MULTI` if deployment-level breakdown isn't required
+
+**2026-04-22** — 44 queries observed (account-research sessions for Diagram, and two unnamed prospect accounts):
+- `SF_ACCOUNTS.ACCT_STATUS` has an undocumented value: `'No Engagement'` — enum in skill previously listed only `Active, Inactive, Former Customer`; updated below
+- Multi-OR Gong transcript lookup confirmed for accounts with name variations: `WHERE (UPPER(t.ACCT_NAME) LIKE '%NYCDOT%' OR UPPER(t.ACCT_NAME) LIKE '%NYC DOT%' OR ...)` — use this pattern when an account name has common abbreviations or spacing variants; Pattern 5 in skill shows single-LIKE but multi-OR is safe and correct
+- One `ERROR(606)` "No active warehouse selected" — connection started without specifying warehouse; always connect with `warehouse='HUMANS'` (confirmed: the query immediately after retried successfully with warehouse set)
+- 10-query account-research parallel pattern clean across 3 prospects (SF_ACCOUNTS, SF_CONTACTS, GONG_CALL_ENRICHMENTS_V, LF_WEBSITE_VISITS+LF_PAGE_VIEWS, SF_CAMPAIGN_MEMBERS, SF_OPPS, SF_ASTRO_ORGS, ZD_TICKET_ENRICHMENTS_V, ACCOUNT_NOTES, ACCOUNT_RESEARCH_LATEST_V) — all sub-650ms; `IS_STALE IS NULL OR IS_STALE = FALSE` is the correct NULL-safe check for "research is current" on `ACCOUNT_RESEARCH_LATEST_V`
 <!-- PATTERNS_LOG_END -->
