@@ -392,17 +392,31 @@ WHERE m.TIME_GRAIN = 'day'
   AND m.DATE = CURRENT_DATE - 1
 ```
 
-### Pattern 2: Contacts for an account (preferred — use CONTACT_360_V)
+### Pattern 2: Contacts/users for an account — ALWAYS include names
+
+**Always join `HQ.MODEL_ASTRO_PII.USERS` for `FULL_NAME` and `EMAIL`** — names are stripped from all other tables. This is required on every user/contact list output.
 
 ```sql
--- Preferred: single query, all sources joined
-SELECT CONTACT_ID, TITLE, CONTACT_URL, PRIMARY_DOMAIN,
-       IS_PRODUCT_USER, PRODUCT_STATUS, LOGINS_COUNT, LAST_LOGIN_TS,
-       MQL_COUNT, LAST_MQL_TS, LAST_MQL_CHANNEL,
-       DOMAIN_COURSES_COMPLETED, DOMAIN_HAS_CERTIFICATION
-FROM GTM.PUBLIC.CONTACT_360_V
-WHERE ACCT_NAME ILIKE '%CUSTOMER_NAME%'
-ORDER BY IS_PRODUCT_USER DESC, MQL_COUNT DESC
+-- Preferred: CONTACT_360_V + PII join for names
+SELECT
+    p.FULL_NAME,
+    p.EMAIL,
+    c.TITLE,
+    c.CONTACT_STATUS,
+    c.LEAD_SCORE_GRADE,
+    c.IS_PRODUCT_USER,
+    c.PRODUCT_STATUS,
+    c.LOGINS_COUNT,
+    c.LAST_LOGIN_TS,
+    c.IS_OPTED_OUT_OF_EMAIL,
+    c.MQL_COUNT,
+    c.LAST_MQL_TS,
+    c.LAST_MQL_CHANNEL,
+    c.CONTACT_URL
+FROM GTM.PUBLIC.CONTACT_360_V c
+LEFT JOIN HQ.MODEL_ASTRO_PII.USERS p ON p.USER_ID = c.ASTRO_USER_ID
+WHERE c.ACCT_NAME ILIKE '%CUSTOMER_NAME%'
+ORDER BY c.IS_PRODUCT_USER DESC, c.LOGINS_COUNT DESC NULLS LAST
 ```
 
 For raw product users only (when CONTACT_360_V is overkill):
@@ -413,10 +427,12 @@ WITH acct AS (
     WHERE UPPER(ACCT_NAME) LIKE '%CUSTOMER_NAME%'
 )
 SELECT DISTINCT
+    p.FULL_NAME, p.EMAIL,
     ou.USER_ID, ou.ROLE, u.EMAIL_DOMAIN, u.STATUS,
     c.CONTACT_URL, c.TITLE
 FROM HQ.IN_ASTRO_DB_PROD.ORG_USER_RELATION ou
 JOIN HQ.MODEL_ASTRO.USERS u ON ou.USER_ID = u.USER_ID
+LEFT JOIN HQ.MODEL_ASTRO_PII.USERS p ON p.USER_ID = u.USER_ID
 LEFT JOIN HQ.MODEL_CRM.SF_CONTACTS c
     ON c.ASTRO_USER_ID = u.USER_ID
     AND c.IS_DELETED = FALSE
@@ -956,4 +972,19 @@ Each entry captures a query pattern that was used successfully or a correction t
 - ERROR 606 "No active warehouse" appeared 5 times across 4 separate MCP sessions within the same cron run — frequency higher than previous days (prior log shows 1x/day). The MCP server is restarting connections mid-cron, losing warehouse state each time. Each session retries and succeeds after warehouse is set. No data loss but adds ~100ms latency and noise to history.
 - Account-research cron confirmed running a dual Gong fetch per account: Pattern 12 (`GONG_CALL_ENRICHMENTS_V + GONG_CALLS`, ~230KB) runs first, then a separate `GONG_CALL_TRANSCRIPTS` fetch (~750–790MB) for `ATTENDEES` and `OPP_NAME` — two columns not available via the enrichment view. Total Gong scan cost: ~5.3GB for 7 accounts vs ~1.6MB if Pattern 12 alone sufficed. If `ATTENDEES`/`OPP_NAME` are not critical outputs, dropping the GONG_CALL_TRANSCRIPTS step would eliminate this cost. This is expected behavior given current skill design; documenting as known overhead.
 - All 10-query parallel account-research pattern healthy — non-Gong queries all sub-500ms; `GONG_CALL_ENRICHMENTS_V` with `ACCT_ID` filter consistently scans only ~230KB (result cache on repeated accounts).
+**2026-04-24** — Renewal analysis session (Python connector via Bash, not MCP — hooks did not fire). Column errors caught and corrected:
+- `SF_OPPS` has NO `DISCOUNT`, `DISCOUNT_PCT`, `LIST_PRICE`, or `LIST_PRICE_AMT` columns — discount is not stored in SF opps at all; infer from `METRONOME_CREDIT_GRANTS.COST_BASIS` (e.g. 0.8333 = 16.67% discount)
+- `METRONOME_USAGE_DAILY` has NO `PRODUCT_NAME` column — it is an invoice-level row (one row per day per invoice period), not a line-item table; key columns: `USAGE_DATE`, `USAGE_AMT`, `BILL_AMT`, `PLAN_NAME`, `SUPPORT_LEVEL`, `INV_UPLIFT_PCT`, `PERIOD_START_DATE`, `PERIOD_END_DATE`, `IS_LATEST`, `IS_CONTRACT`, `IS_FINALIZED`, `IS_DRAFT`
+- `MODEL_ASTRO.DEPLOYMENTS` has NO `RESILIENCY` column — confirmed via query error; use `IS_HIGH_AVAILABILITY` (boolean) instead; also confirmed new columns: `RUNTIME_TYPE`, `ASTRO_RUNTIME_VERSION`, `WORKSPACE_NAME`, `CLUSTER_NAME`, `PROVIDER_REGION`, `IS_DEVELOPMENT_ONLY`, `SCHEDULER_AU`, `WORKER_AU`, `SCALING_SPEC` (JSON with hibernation schedules)
+- `METRONOME_CREDIT_GRANTS` has NO `CREDIT_CONSUMED_AMT` column — use `GRANTED_AMT - CURRENT_BALANCE_AMT` to compute consumed; confirmed columns: `GRANTED_AMT`, `CURRENT_BALANCE_AMT`, `ROLLED_OVER_AMT`, `EXPIRED_AMT`, `COST_BASIS` (discount multiplier), `PAID_AMT`, `IS_ROLLOVER_CREDIT`, `IS_ROLLED_OVER_CREDIT`, `ROLLOVER_RATIO`
+- `SF_CUST_CONTRACTS` filter `ASTRO_ORG_ID` returns empty when used with `IS_ACTIVE_CONTRACT = TRUE AND IS_LATEST = TRUE` — use `ACCT_ID` filter instead; confirmed columns include `OPP_TYPE`, `CONTRACT_ARR_AMT`, `TOTAL_CONTRACT_VALUE`, `SUPPORT_LEVEL`, `SUPPORT_TIER_PCT`, `PRODUCT`, `SUB_PRODUCT`, `IS_OBSERVE`, `DAYS_IN_CONTRACT`
+- `METRONOME_CONTRACTS` confirmed columns: `CONTRACT_ID`, `PLAN_TYPE`, `RATE_CARD_ID`, `IS_ACTIVE`, `START_TS`, `END_TS` — use `RATE_CARD_ID` to join to `METRONOME_RATE_CARDS` for tier/uplift info
+- Rate card discovery pattern confirmed: `METRONOME_RATE_CARDS` has `RATE_CARD_ID`, `RATE_CARD_NAME`, `AVG_UPLIFT_PCT` — join via `METRONOME_CONTRACTS.RATE_CARD_ID` to get a customer's current rate card; `AVG_UPLIFT_PCT` values: Enterprise=1.0, Enterprise w/ BC Support=1.25, Business Critical=0.75, Business=0.5
+- MCP Snowflake tool availability: only loads in sessions started from Claude desktop app at `$HOME`; not available in CLI sessions started from other directories — use Python connector (`~/.venvs/snowflake/bin/python3`) as fallback; hooks won't fire in fallback sessions
+**2026-05-05** — Zendesk ticket monitor DAG build session (Python connector via Bash):
+- Correct warehouse is `HUMANS` (not `COMPUTE_WH`) — `COMPUTE_WH` does not exist; `GTM_ROBOTS` and `HUMANS` are the two user-accessible warehouses; `HUMANS` is correct for interactive/cron use
+- ZD ticket join path: `HQ.MODEL_SUPPORT.ZD_TICKETS` → `HQ.MODEL_SUPPORT.ZD_ORGS` (on `ZD_ORGS.ORG_ID = ZD_TICKETS.ORG_ID`) → `GTM.PUBLIC.ACCOUNT_360_V` (on `ACCOUNT_360_V.ACCT_ID = ZD_ORGS.SF_ACCT_ID`). `ZD_ORGS.SF_ACCT_ID` is the direct FK to Salesforce account ID. Do NOT use `HQ.MAPS.ZD_ACCTS` (has `ZD_ORG_MAP` as JSON array, requires FLATTEN — more complex and error-prone).
+- `HQ.MODEL_SUPPORT.ZD_TICKETS` key columns: `TICKET_ID`, `ORG_ID`, `ORG_NAME`, `STATUS`, `PRIORITY`, `SUBJECT`, `DESCRIPTION`, `CREATED_TS` (TIMESTAMP_TZ), `UPDATED_TS` (TIMESTAMP_TZ). Note: column is `CREATED_TS` not `CREATED_AT` or `UPDATED_AT`.
+- `SELECT DISTINCT` with `ORDER BY`: can only ORDER BY columns in the SELECT list — aliased expressions (e.g. `t.CREATED_TS::DATE AS TICKET_DATE`) must be referenced by alias, not original expression.
+- `INFORMATION_SCHEMA.TABLES` queries fail with error 002043 when no warehouse is set — always set warehouse before using INFORMATION_SCHEMA; `SHOW TABLES` works without warehouse.
 <!-- PATTERNS_LOG_END -->

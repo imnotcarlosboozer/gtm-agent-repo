@@ -334,7 +334,29 @@ mkdir -p ~/claude-work/research-assistant/outputs/accounts/{SLUG}/
 ```
 Overwrite: `~/claude-work/research-assistant/outputs/accounts/{SLUG}/report.md`
 
-### Step 8: Update Apollo
+### Step 8: Sync to Snowflake
+
+Always run — unconditionally. Parse score, grade, mc_grade, and confidence from the generated report header line:
+`**Fit Score**: {X}/20 | **Grade**: {A/B/C/D} | **MC Grade**: {A/B/C/D} | **Confidence**: {HIGH/MEDIUM/LOW}`
+
+Build the sources array from which Snowflake tables returned data (e.g. `["SF_ACCOUNTS","SF_OPPS","LF_VISITS","GONG","WEB"]`).
+
+```bash
+source ~/.zshrc && ~/.venvs/snowflake/bin/python3 \
+  ~/claude-work/scripts/write_account_research.py \
+  --acct-id "{SF_ACCT_ID}" \
+  --acct-name "{COMPANY_NAME}" \
+  --score {SCORE} \
+  --grade {GRADE} \
+  --mc-grade {MC_GRADE} \
+  --confidence {CONFIDENCE} \
+  --sources '{SOURCES_JSON_ARRAY}' \
+  --report-path ~/claude-work/research-assistant/outputs/accounts/{SLUG}/report.md
+```
+
+If `SF_ACCT_ID` is null (account not found in Salesforce), pass `--acct-id "UNKNOWN"`. Log result: `Snowflake: write succeeded` or `Snowflake: write FAILED`.
+
+### Step 8b: Update Apollo
 
 Skip if no `APOLLO_API_KEY`. Use `APOLLO_ID` from Step 2 pre-fetch if found; otherwise search by name + confirm by domain.
 
